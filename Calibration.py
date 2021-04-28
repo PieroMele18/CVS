@@ -3,6 +3,32 @@ import numpy as np
 import os
 import glob
 
+def normalization(image):
+
+    hh, ww = image.shape[:2]
+
+
+    # illumination normalize
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+
+    # separate channels
+    y, cr, cb = cv2.split(ycrcb)
+
+    # get background which paper says (gaussian blur using standard deviation 5 pixel for 300x300 size image)
+    # account for size of input vs 300
+    sigma = int(5 * hh / 300)
+    gaussian = cv2.GaussianBlur(y, (0, 0), sigma, sigma)
+
+    # subtract background from Y channel
+    y = (y - gaussian + 100)
+
+    # merge channels back
+    ycrcb = cv2.merge([y, cr, cb])
+
+    # convert to BGR
+    output = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
+    return output
+
 def save_img_for_calibration(webcam):
 
     i = 0
@@ -71,3 +97,8 @@ def camera_calibration():
 
     return ret, mtx, dist, rvecs, tvecs , h , w
 
+def undistort(img,mtx,dist,newcameramtx,roi):
+    img = cv2.undistort(img, mtx, dist, None, newcameramtx)
+    x, y, w, h = roi
+    img = img [y:y + h, x:x + w]
+    return img

@@ -1,6 +1,8 @@
 """Import di alcune librerie utili :
 Numpy per gestire le matrice
 Opencv per gestire la parte della visione artificiale"""
+import operator
+
 import numpy as np
 import cv2
 
@@ -28,7 +30,7 @@ def draw_chessboard_sides(img,found,corners):
 
 def get_chessboard(img,found,corners):
     if found :
-        width, height = 310, 310
+        width, height = 390, 390
         coord = extreme_corners(corners)
         a,b,d,c = get_coordinates(coord[0]),get_coordinates(coord[1]),get_coordinates(coord[2]),get_coordinates(coord[3])
         pts1 = np.float32([[a[0], a[1]],
@@ -125,9 +127,9 @@ def test_convolution(img,warp_points):
 
 """Funzione per ridurre il rumore e rendere grigia l'immagine"""
 def pre_processing(img):
-    #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    #gray_blur = cv2.bilateralFilter(gray,9,75,75)
-    return img
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    gray_blur = cv2.bilateralFilter(gray,9,75,75)
+    return gray_blur
 
 """Funzione che stampa le coordinate a partire da una matrice (81,2)"""
 def test_draw_coordinates(img,corners):
@@ -140,7 +142,6 @@ def test_draw_coordinates(img,corners):
                               cv2.LINE_4)
         # Stampa il punto
         img = cv2.circle(img, (int(coordinates[0]),int(coordinates[1])), 2, (255, 0, 0), 2)
-        cv2.imwrite("corners_after_calibration.jpg", img)
     return img
 
 """Funzione che crea la matrice dei punti presenti nella scacchiera 
@@ -304,8 +305,6 @@ def boxes_matrix(img,cor):
         for i in range(0,8,1):
 
             # Larghezza e altezza , le dimensioni possono differire a causa della prospettiva
-            #width = int(cor[j+i+1][0] - cor[j+i][0])
-            #height = int(cor[j+i+9][1] - cor[j+i+1][1])
             width,height = 128,128
             a,b,c,d = cor[j+i],cor[j+i+1],cor[j+i+10],cor[j+i+9]
             pts1 = np.float32([[a[0], a[1]],
@@ -315,44 +314,163 @@ def boxes_matrix(img,cor):
             pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
             matrix = cv2.getPerspectiveTransform(pts1, pts2)
             frame = cv2.warpPerspective(img, matrix, (width, height))
+            frame = frame[24:104, 24:104] # Medesima Roi utilizzata per machine learning
             boxes.append(frame)
 
     return boxes
 
 def create_data_set(boxes):
 
-    for i in range(0,16):
+    for i in range(0,64):
 
-        frame = boxes[i][24:104,24:104]
-        frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        frame180 = cv2.rotate(frame,  cv2.ROTATE_180 )
-        frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        #Per avere un dataset di una certa consistenza creo quattro versioni per ogni casa
+        frame = boxes[i][24:104,24:104] # Estrazione Roi
+        frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) #Giro l'immagine di 90 gradi
+        frame180 = cv2.rotate(frame,  cv2.ROTATE_180 ) #Giro l'immagine di 180 gradi
+        frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE) #Giro l'immagine di 270 gradi
 
-        cv2.imwrite("pieces"+str(i)+".jpg",frame)
-        cv2.imwrite("pieces"+str(i*100)+".jpg",frame90)
-        cv2.imwrite("pieces"+str(i*1000)+".jpg",frame180)
-        cv2.imwrite("pieces"+str(i*10000)+".jpg",frame270)
+        cv2.imwrite("img"+str(i)+".jpg",frame)
+        cv2.imwrite("img90"+str(i)+".jpg",frame90)
+        cv2.imwrite("img180"+str(i)+".jpg",frame180)
+        cv2.imwrite("img270"+str(i)+".jpg",frame270)
 
-    for i in range(16,48):
+def print_positional_matrix(matrix):
+    print("MATRICE POSIZIONALE")
+    for x in range(8):
+        for y in range(8):
+            print(matrix[x][y], end='  ')
+        print("")
 
-        frame = boxes[i][24:104,24:104]
-        frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        frame180 = cv2.rotate(frame,  cv2.ROTATE_180 )
-        frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+def get_move(old,new):
+    matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
+                         ["h2","g2","f2","e2","d2","c2","b2","a2"],
+                         ["h3","g3","f3","e3","d3","c3","b3","a3"],
+                         ["h4","g4","f4","e4","d4","c4","b4","a4"],
+                         ["h5","g5","f5","e5","d5","c5","b5","a5"],
+                         ["h6","g6","f6","e6","d6","c6","b6","a6"],
+                         ["h7","g7","f7","e7","d7","c7","b7","a7"],
+                         ["h8","g8","f8","e8","d8","c8","b8","a8"]]
 
-        cv2.imwrite("case"+str(i)+".jpg",frame)
-        cv2.imwrite("case"+str(i*100)+".jpg",frame90)
-        cv2.imwrite("case"+str(i*1000)+".jpg",frame180)
-        cv2.imwrite("case"+str(i*10000)+".jpg",frame270)
+    move = [[0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0]]
 
-    for i in range(48,64):
+    for x in range(8):
+        for y in range(8):
+            move[x][y] = old[x][y] - new[x][y]
 
-        frame = boxes[i][24:104,24:104]
-        frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        frame180 = cv2.rotate(frame,  cv2.ROTATE_180 )
-        frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    da = ""
+    a = ""
 
-        cv2.imwrite("pieces"+str(i)+".jpg",frame)
-        cv2.imwrite("pieces"+str(i*100)+".jpg",frame90)
-        cv2.imwrite("pieces"+str(i*1000)+".jpg",frame180)
-        cv2.imwrite("pieces"+str(i*10000)+".jpg",frame270)
+    for x in range(8):
+        for y in range(8):
+
+            if move[x][y] == -1 : da = matrix_chessboard[x][y]
+            if move[x][y] ==  1 : a  = matrix_chessboard[x][y]
+
+
+
+    #Gestione arrocco
+
+    #Arrocco bianco
+
+    #Condizioni da verificarsi in caso di arrocco corto
+    if move[0][0]==1 and move[0][1]==-1 and move[0][2]==-1 and move [0][3] == 1 :
+        return "e1g1"
+
+    #Condizioni da verificarsi in caso di arrocco lungo
+    if move[0][3]==1 and move[0][4]==-1 and move[0][5]==-1 and move [0][7] == 1 :
+        return "e1c1"
+
+    #Arrocco nero
+    #Condizioni da verificarsi in caso di arrocco corto
+    if move[7][0]==1 and move[7][1]==-1 and move[7][2]==-1 and move [7][3] == 1 :
+        return "e8g8"
+
+    #Condizioni da verificarsi in caso di arrocco lungo
+    if move[7][3]==1 and move[7][4]==-1 and move[7][5]==-1 and move [7][7] == 1 :
+        return "e8c8"
+
+
+    return a+da
+
+def isStart(matrix):
+    if matrix==\
+    [[1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1]]: return True
+    else: return False
+
+def isEmpty(matrix):
+    if matrix==\
+    [[0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0]] : return True
+    else: return False
+
+def isBlack(matrix):
+        if matrix == \
+                [[0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1]]:
+            return True
+        else:
+            return False
+
+def isWhite(matrix):
+    if matrix == \
+            [[1, 1, 1, 1, 1, 1, 1, 1],
+             [1, 1, 1, 1, 1, 1, 1, 1],
+             [0, 0, 0, 0, 0, 0, 0, 0],
+             [0, 0, 0, 0, 0, 0, 0, 0],
+             [0, 0, 0, 0, 0, 0, 0, 0],
+             [0, 0, 0, 0, 0, 0, 0, 0],
+             [0, 0, 0, 0, 0, 0, 0, 0],
+             [0, 0, 0, 0, 0, 0, 0, 0]]:
+        return True
+    else:
+        return False
+
+def setWhite():
+    x = [[1, 1, 1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1, 1],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0]]
+
+    return x
+
+def setBlack():
+    x =[[0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0, 0, 0],
+                 [1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1]]
+
+    return x
