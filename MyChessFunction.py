@@ -341,7 +341,7 @@ def print_positional_matrix(matrix):
             print(matrix[x][y], end='  ')
         print("")
 
-def get_move(old,new):
+def get_move(old,new,chessboard):
     matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
                          ["h2","g2","f2","e2","d2","c2","b2","a2"],
                          ["h3","g3","f3","e3","d3","c3","b3","a3"],
@@ -370,10 +370,17 @@ def get_move(old,new):
     for x in range(8):
         for y in range(8):
 
-            if move[x][y] == -1 : da = matrix_chessboard[x][y]
-            if move[x][y] ==  1 : a  = matrix_chessboard[x][y]
+            if move[x][y] == -1 : a = matrix_chessboard[x][y]
+            if move[x][y] ==  1 : da  = matrix_chessboard[x][y]
 
+    """
+    print(chessboard.piece_at(da))
 
+    # Gestione Promozione Bianco
+    if (chessboard.piece == "P"):
+        if da == "a7" or da == "b7" or da == "c7" or da == "d7" or da == "e7" or da == "f7" or da == "g7" or da == "h7":
+            return da + a + "q"
+    """
 
     #Gestione arrocco
 
@@ -396,8 +403,7 @@ def get_move(old,new):
     if move[7][3]==1 and move[7][4]==-1 and move[7][5]==-1 and move [7][7] == 1 :
         return "e8c8"
 
-
-    return a+da
+    return da+a
 
 def isStart(matrix):
     if matrix==\
@@ -465,12 +471,12 @@ def setWhite():
 
 def setBlack():
     x =[[0, 0, 0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0, 0, 0],
-                 [1, 1, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1]]
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1]]
 
     return x

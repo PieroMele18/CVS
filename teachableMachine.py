@@ -1,23 +1,17 @@
 import tensorflow.keras
 from PIL import Image, ImageOps
-import numpy as np
-import cv2
-
-#Variabile utile
-result = 0
-
+from MyChessFunction import *
 
 # Disable scientific notation for clarity
 np.set_printoptions(suppress=True)
 
 # Load the model
 model = tensorflow.keras.models.load_model('keras_model.h5')
-
+tensorflow.keras.backend.set_learning_phase(0)
 # Create the array of the right shape to feed into the keras model
 # The 'length' or number of images you can put into the array is
 # determined by the first position in the shape tuple, in this case 1.
 data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-
 
 def find_pieces(boxes , str ):
 
@@ -46,7 +40,7 @@ def find_pieces(boxes , str ):
         data[0] = normalized_image_array
 
         # run the inference
-        prediction = model.predict(data)
+        prediction = model.predict(data,batch_size=64)
 
         if str == "all" :
             # Ricerca tutti i pezzi posizionati sulla scacchiera
@@ -65,11 +59,8 @@ def find_pieces(boxes , str ):
         #Chiusura del ciclo
         if y == 8 : break
 
-    print(positional_matrix)
-
+    print_positional_matrix(positional_matrix)
     return positional_matrix
-
-
 
 def get_prediction(prediction):
     if (prediction[0][0] < prediction[0][1]) or (prediction[0][0] < prediction[0][2]):

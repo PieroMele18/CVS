@@ -127,13 +127,20 @@ class App(QWidget):
 
 		self.solitario = QPushButton('Gioco solitario', self)
 		self.solitario.setToolTip('This is an example button')
-		self.solitario.move(650, 70)
+		self.solitario.setGeometry(650, 70, 100, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
 		self.button = QPushButton('Prossima mossa', self)
-		self.button.move(650, 70)
+		self.button.setGeometry(650, 70, 100, 40)
+		#self.button.move(650, 70)
 		self.button.clicked.connect(self.on_click_next)
 		self.button.hide()
+
+
+		self.buttonReset = QPushButton('Reset', self)
+		self.buttonReset.setGeometry(650, 120, 100, 40)
+		self.buttonReset.clicked.connect(self.on_click_reset)
+		self.buttonReset.hide()
 
 		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
 		self.widgetSvg.load(self.chessboardSvg)
@@ -165,11 +172,29 @@ class App(QWidget):
 			#Aggiorna pulsanti
 			self.solitario.hide()
 			self.button.show()
+			self.buttonReset.show()
 
 			#Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
 		elif isEmpty(matrix):
 			pass
+
+	@pyqtSlot()
+	def on_click_reset(self):
+		global isWhiteTurn
+		global isBlackTurn
+		global oldblack
+		global oldwhite
+		global chessboard
+
+		isWhiteTurn = True
+		isBlackTurn = False
+
+		oldblack = setBlack()
+		oldwhite = setWhite()
+
+		chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		self.updateChessboard(chessboard)
 
 	@pyqtSlot()
 	def on_click_next(self):
@@ -183,6 +208,7 @@ class App(QWidget):
 		# Estrazione delle case della matrice
 		if boxes_found:
 			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_data_set(boxes)
 
 		#Se è il turno del bianco
 		if isWhiteTurn:
@@ -190,10 +216,11 @@ class App(QWidget):
 			#Estrazione matrice posizionale bianca
 			matrix = find_pieces(boxes, "white")
 			#Elaborazione mossa del bianco
-			move = get_move(oldwhite, matrix)
-			if chessboard.is_legal(chessboard.parse_uci(move)):
+			move = get_move(oldwhite, matrix,chessboard)
+
+			try :
 				chessboard.push_uci(move)
-			else :
+			except :
 				print("Mossa non valida")
 				return
 			#Gestione dei turni
@@ -210,10 +237,10 @@ class App(QWidget):
 			#Estrazione matrice posizionale bianca
 			matrix = find_pieces(boxes, "black")
 			# Elaborazione mossa del bianco
-			move = get_move(oldblack, matrix)
-			if chessboard.is_legal(chessboard.parse_uci(move)):
+			move = get_move(oldblack, matrix,chessboard)
+			try:
 				chessboard.push_uci(move)
-			else:
+			except:
 				print("Mossa non valida")
 				return
 			#Passa il turno
@@ -255,6 +282,7 @@ class App(QWidget):
 
 if __name__=="__main__":
 	app = QApplication(sys.argv)
+	app.setStyle('Fusion')
 	a = App()
 	a.show()
 	sys.exit(app.exec_())
