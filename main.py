@@ -176,6 +176,7 @@ class App(QWidget):
 
 			#Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
+
 		elif isEmpty(matrix):
 			pass
 
@@ -208,7 +209,6 @@ class App(QWidget):
 		# Estrazione delle case della matrice
 		if boxes_found:
 			boxes = boxes_matrix(img_chessboard, coordinates)
-			create_data_set(boxes)
 
 		#Se è il turno del bianco
 		if isWhiteTurn:
@@ -223,6 +223,10 @@ class App(QWidget):
 			except :
 				print("Mossa non valida")
 				return
+
+			#Gestione pedone mangiato
+			oldblack = whiteTake(matrix,oldblack)
+
 			#Gestione dei turni
 			isWhiteTurn = False
 			isBlackTurn = True
@@ -231,6 +235,7 @@ class App(QWidget):
 			#Sovrascrivere variabile dello stato precedente con il nuovo stato
 			oldwhite = matrix
 			return
+
 
 		#Se è il turno del bianco
 		if isBlackTurn:
@@ -243,6 +248,11 @@ class App(QWidget):
 			except:
 				print("Mossa non valida")
 				return
+
+
+			#Gestione pedone mangiato
+			oldwhite = blackTake(matrix,oldwhite)
+
 			#Passa il turno
 			isWhiteTurn = True
 			isBlackTurn = False

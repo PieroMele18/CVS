@@ -5,7 +5,7 @@ import operator
 
 import numpy as np
 import cv2
-
+import chess
 
 """Restituisce una tupla che costituisce 
 le coordinate dei punti , contenuti all'interno
@@ -364,6 +364,8 @@ def get_move(old,new,chessboard):
         for y in range(8):
             move[x][y] = old[x][y] - new[x][y]
 
+    print(move)
+
     da = ""
     a = ""
 
@@ -373,14 +375,20 @@ def get_move(old,new,chessboard):
             if move[x][y] == -1 : a = matrix_chessboard[x][y]
             if move[x][y] ==  1 : da  = matrix_chessboard[x][y]
 
-    """
-    print(chessboard.piece_at(da))
+
 
     # Gestione Promozione Bianco
-    if (chessboard.piece == "P"):
+
+    piece_moved = chessboard.piece_at(chess.parse_square(da))
+
+    if (piece_moved == chess.Piece(1,True)):
         if da == "a7" or da == "b7" or da == "c7" or da == "d7" or da == "e7" or da == "f7" or da == "g7" or da == "h7":
             return da + a + "q"
-    """
+
+
+    # Gestione Promozione Nero
+
+
 
     #Gestione arrocco
 
@@ -480,3 +488,20 @@ def setBlack():
         [1, 1, 1, 1, 1, 1, 1, 1]]
 
     return x
+
+def whiteTake(newWhite,oldBlack):
+    for x in range(8):
+        for y in range(8):
+            if(newWhite[x][y] == oldBlack[x][y]):
+                oldBlack[x][y] = 0
+
+    return oldBlack
+
+
+def blackTake(newBlack, oldWhite):
+    for x in range(8):
+        for y in range(8):
+            if (newBlack[x][y] == oldWhite[x][y]):
+                oldWhite[x][y] = 0
+
+    return oldWhite

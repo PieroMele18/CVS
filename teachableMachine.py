@@ -7,7 +7,8 @@ np.set_printoptions(suppress=True)
 
 # Load the model
 model = tensorflow.keras.models.load_model('keras_model.h5')
-tensorflow.keras.backend.set_learning_phase(0)
+
+
 # Create the array of the right shape to feed into the keras model
 # The 'length' or number of images you can put into the array is
 # determined by the first position in the shape tuple, in this case 1.
@@ -40,7 +41,7 @@ def find_pieces(boxes , str ):
         data[0] = normalized_image_array
 
         # run the inference
-        prediction = model.predict(data,batch_size=64)
+        prediction = model.predict(data)
 
         if str == "all" :
             # Ricerca tutti i pezzi posizionati sulla scacchiera
