@@ -18,7 +18,7 @@ import cv2
 import chess
 
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton , QMessageBox
 from PyQt5.QtGui import QPixmap
 import sys
 import cv2
@@ -106,9 +106,6 @@ class VideoThread(QThread):
 		self._run_flag = False
 		self.wait()
 
-
-
-
 class App(QWidget):
 	def __init__(self):
 		super().__init__()
@@ -129,6 +126,13 @@ class App(QWidget):
 		self.solitario.setToolTip('This is an example button')
 		self.solitario.setGeometry(650, 70, 100, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
+
+		"""
+		self.test = QPushButton('TEST', self)
+		self.test.setToolTip('This is an example button')
+		self.test.setGeometry(650, 110, 100, 40)
+		self.test.clicked.connect(self.winMessage)
+		"""
 
 		self.button = QPushButton('Prossima mossa', self)
 		self.button.setGeometry(650, 70, 100, 40)
@@ -216,7 +220,7 @@ class App(QWidget):
 			#Estrazione matrice posizionale bianca
 			matrix = find_pieces(boxes, "white")
 			#Elaborazione mossa del bianco
-			move = get_move(oldwhite, matrix,chessboard)
+			move = get_move(oldwhite, matrix,chessboard,oldblack)
 
 			try :
 				chessboard.push_uci(move)
@@ -226,6 +230,10 @@ class App(QWidget):
 
 			#Gestione pedone mangiato
 			oldblack = whiteTake(matrix,oldblack)
+
+			#Vittoria per il bianco
+			if(chessboard.is_checkmate()):
+				print("Il bianco ha vinto!")
 
 			#Gestione dei turni
 			isWhiteTurn = False
@@ -237,12 +245,12 @@ class App(QWidget):
 			return
 
 
-		#Se è il turno del bianco
+		#Se è il turno del nero
 		if isBlackTurn:
-			#Estrazione matrice posizionale bianca
+			#Estrazione matrice posizionale nera
 			matrix = find_pieces(boxes, "black")
 			# Elaborazione mossa del bianco
-			move = get_move(oldblack, matrix,chessboard)
+			move = get_move(oldblack, matrix,chessboard,oldwhite)
 			try:
 				chessboard.push_uci(move)
 			except:
@@ -253,6 +261,10 @@ class App(QWidget):
 			#Gestione pedone mangiato
 			oldwhite = blackTake(matrix,oldwhite)
 
+			#Vittoria per il bianco
+			if(chessboard.is_checkmate()):
+				print("Il nero ha vinto!")
+
 			#Passa il turno
 			isWhiteTurn = True
 			isBlackTurn = False
@@ -261,8 +273,19 @@ class App(QWidget):
 			#Sovrascrivere variabile dello stato precedente con il nuovo stato
 			oldblack = matrix
 			return
+	"""
+	@pyqtSlot()
+	def winMessage(self,player):
+		self.msg = QMessageBox()
+		self.msg.setIcon(QMessageBox.Information)
 
+		if(player == "white "):
+			self.msg.setText("Il bianco ha vinto")
+		else:
+			self.msg.setText("Il nero ha vinto")
 
+		self.msg.setStandardButtons(QMessageBox.Ok)
+	"""
 
 	def closeEvent(self, event):
 		self.thread.stop()

@@ -341,7 +341,8 @@ def print_positional_matrix(matrix):
             print(matrix[x][y], end='  ')
         print("")
 
-def get_move(old,new,chessboard):
+def get_move(old,new,chessboard,old_opp):
+
     matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
                          ["h2","g2","f2","e2","d2","c2","b2","a2"],
                          ["h3","g3","f3","e3","d3","c3","b3","a3"],
@@ -350,7 +351,6 @@ def get_move(old,new,chessboard):
                          ["h6","g6","f6","e6","d6","c6","b6","a6"],
                          ["h7","g7","f7","e7","d7","c7","b7","a7"],
                          ["h8","g8","f8","e8","d8","c8","b8","a8"]]
-
     move = [[0,0,0,0,0,0,0,0],
      [0,0,0,0,0,0,0,0],
      [0,0,0,0,0,0,0,0],
@@ -360,11 +360,13 @@ def get_move(old,new,chessboard):
      [0,0,0,0,0,0,0,0],
      [0,0,0,0,0,0,0,0]]
 
+
+
     for x in range(8):
         for y in range(8):
             move[x][y] = old[x][y] - new[x][y]
 
-    print(move)
+
 
     da = ""
     a = ""
@@ -372,8 +374,30 @@ def get_move(old,new,chessboard):
     for x in range(8):
         for y in range(8):
 
-            if move[x][y] == -1 : a = matrix_chessboard[x][y]
-            if move[x][y] ==  1 : da  = matrix_chessboard[x][y]
+            if move[x][y] == -1 :
+                a = matrix_chessboard[x][y]
+
+                # Salvo indici per la gestione delle mosse enpassant
+
+                global index_x, index_y
+
+                index_x = x
+                index_y = y
+
+            if move[x][y] ==  1 :
+                da  = matrix_chessboard[x][y]
+
+
+    if(da=="" or a==""):
+        raise Exception("Mossa non valida")
+
+    #Gestione EnPassant
+    if(chessboard.is_en_passant(chess.Move(chess.parse_square(da),chess.parse_square(a)))):
+        if(index_x == 5):
+            whiteTakeEnpassant(old_opp,index_x,index_y)
+        elif(index_x == 2):
+            blackTakeEnpassant(old_opp,index_x,index_y)
+
 
 
 
@@ -388,7 +412,9 @@ def get_move(old,new,chessboard):
 
     # Gestione Promozione Nero
 
-
+    if (piece_moved == chess.Piece(1,False)):
+        if da == "a2" or da == "b2" or da == "c2" or da == "d2" or da == "e2" or da == "f2" or da == "g2" or da == "h2":
+            return da + a + "q"
 
     #Gestione arrocco
 
@@ -505,3 +531,10 @@ def blackTake(newBlack, oldWhite):
                 oldWhite[x][y] = 0
 
     return oldWhite
+
+
+def whiteTakeEnpassant(oldBlack,x,y):
+    oldBlack[x-1][y] = 0
+
+def blackTakeEnpassant(oldWhite,x,y):
+    oldWhite[x - 1][y] = 0
