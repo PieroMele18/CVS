@@ -439,6 +439,95 @@ def get_move(old,new,chessboard,old_opp):
 
     return da+a
 
+def get_move(old,new,chessboard):
+
+    matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
+                         ["h2","g2","f2","e2","d2","c2","b2","a2"],
+                         ["h3","g3","f3","e3","d3","c3","b3","a3"],
+                         ["h4","g4","f4","e4","d4","c4","b4","a4"],
+                         ["h5","g5","f5","e5","d5","c5","b5","a5"],
+                         ["h6","g6","f6","e6","d6","c6","b6","a6"],
+                         ["h7","g7","f7","e7","d7","c7","b7","a7"],
+                         ["h8","g8","f8","e8","d8","c8","b8","a8"]]
+    move = [[0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0]]
+
+    for x in range(8):
+        for y in range(8):
+            move[x][y] = old[x][y] - new[x][y]
+
+
+
+    da = ""
+    a = ""
+
+    for x in range(8):
+        for y in range(8):
+
+            if move[x][y] == -1 :
+                a = matrix_chessboard[x][y]
+
+                # Salvo indici per la gestione delle mosse enpassant
+
+                global index_x, index_y
+
+                index_x = x
+                index_y = y
+
+            if move[x][y] ==  1 :
+                da  = matrix_chessboard[x][y]
+
+
+    if(da=="" or a==""):
+        raise Exception("Mossa non valida")
+
+
+
+    # Gestione Promozione Bianco
+
+    piece_moved = chessboard.piece_at(chess.parse_square(da))
+
+    if (piece_moved == chess.Piece(1,True)):
+        if da == "a7" or da == "b7" or da == "c7" or da == "d7" or da == "e7" or da == "f7" or da == "g7" or da == "h7":
+            return da + a + "q"
+
+
+    # Gestione Promozione Nero
+
+    if (piece_moved == chess.Piece(1,False)):
+        if da == "a2" or da == "b2" or da == "c2" or da == "d2" or da == "e2" or da == "f2" or da == "g2" or da == "h2":
+            return da + a + "q"
+
+    #Gestione arrocco
+
+    #Arrocco bianco
+
+    #Condizioni da verificarsi in caso di arrocco corto
+    if move[0][0]==1 and move[0][1]==-1 and move[0][2]==-1 and move [0][3] == 1 :
+        return "e1g1"
+
+    #Condizioni da verificarsi in caso di arrocco lungo
+    if move[0][3]==1 and move[0][4]==-1 and move[0][5]==-1 and move [0][7] == 1 :
+        return "e1c1"
+
+    #Arrocco nero
+    #Condizioni da verificarsi in caso di arrocco corto
+    if move[7][0]==1 and move[7][1]==-1 and move[7][2]==-1 and move [7][3] == 1 :
+        return "e8g8"
+
+    #Condizioni da verificarsi in caso di arrocco lungo
+    if move[7][3]==1 and move[7][4]==-1 and move[7][5]==-1 and move [7][7] == 1 :
+        return "e8c8"
+
+    return da+a
+
+
 def isStart(matrix):
     if matrix==\
     [[1,1,1,1,1,1,1,1],
@@ -538,3 +627,53 @@ def whiteTakeEnpassant(oldBlack,x,y):
 
 def blackTakeEnpassant(oldWhite,x,y):
     oldWhite[x - 1][y] = 0
+
+def computer_black_move(move,oldwhite):
+
+    matrix_chessboard = [["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"],
+                         ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"],
+                         ["h3", "g3", "f3", "e3", "d3", "c3", "b3", "a3"],
+                         ["h4", "g4", "f4", "e4", "d4", "c4", "b4", "a4"],
+                         ["h5", "g5", "f5", "e5", "d5", "c5", "b5", "a5"],
+                         ["h6", "g6", "f6", "e6", "d6", "c6", "b6", "a6"],
+                         ["h7", "g7", "f7", "e7", "d7", "c7", "b7", "a7"],
+                         ["h8", "g8", "f8", "e8", "d8", "c8", "b8", "a8"]]
+
+
+    move_matrix = [[0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0]]
+
+    da,a = parse_move(move)
+
+    for x in range(8):
+        for y in range(8):
+            if( da == matrix_chessboard[x][y] ) :
+                move_matrix[x][y] = 1
+
+            if( a == matrix_chessboard[x][y] ) :
+                move_matrix[x][y] = -1
+
+    for x in range(8):
+        for y in range(8):
+            if(move_matrix[x][y] == -1 and oldwhite[x][y] == 1):
+                oldwhite[x][y] = 0
+
+    return oldwhite
+
+
+
+
+
+
+def parse_move(move):
+
+    da = move[0]+move[1]
+    a = move[2]+move[3]
+
+    return da,a

@@ -14,9 +14,8 @@ Librerie esterne in uso all'interno del programma :
 cv2 per la computer vision 
 python-chess per la parte legata al motore di scacchi
 """
-import cv2
 import chess
-
+import chess.engine
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton , QMessageBox
 from PyQt5.QtGui import QPixmap
@@ -24,7 +23,7 @@ import sys
 import cv2
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 import numpy as np
-
+from stockfish import Stockfish
 #DEFINIZIONE VARIABILI UTILI
 chessboard_found = False
 boxes_found = False
@@ -37,9 +36,7 @@ isBlackTurn = False
 oldblack = setBlack()
 oldwhite = setWhite()
 chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
-
-
-
+stockfish = Stockfish ("stockfish-10-win\Windows\stockfish_10_x64")
 
 class VideoThread(QThread):
 	change_pixmap_signal = pyqtSignal(np.ndarray)
@@ -109,6 +106,8 @@ class VideoThread(QThread):
 class App(QWidget):
 	def __init__(self):
 		super().__init__()
+
+
 		self.setWindowTitle("Chess Computer System ")
 		self.display_width = 1080
 		self.display_height = 720
@@ -127,18 +126,29 @@ class App(QWidget):
 		self.solitario.setGeometry(650, 70, 100, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
-		"""
-		self.test = QPushButton('TEST', self)
-		self.test.setToolTip('This is an example button')
-		self.test.setGeometry(650, 110, 100, 40)
-		self.test.clicked.connect(self.winMessage)
-		"""
+
+		self.White = QPushButton('Gioca con il bianco', self)
+		self.White.setToolTip('This is an example button')
+		self.White.setGeometry(650, 130, 100, 40)
+		self.White.clicked.connect(self.play_as_white)
+
+		self.Black = QPushButton('Gioca con il nero', self)
+		self.Black.setToolTip('This is an example button')
+		self.Black.setGeometry(650, 190, 100, 40)
+		self.Black.clicked.connect(self.play_as_black)
+
+
 
 		self.button = QPushButton('Prossima mossa', self)
 		self.button.setGeometry(650, 70, 100, 40)
-		#self.button.move(650, 70)
 		self.button.clicked.connect(self.on_click_next)
 		self.button.hide()
+
+
+		self.next_white = QPushButton('Prossima mossa', self)
+		self.next_white.setGeometry(650, 70, 100, 40)
+		self.next_white.clicked.connect(self.on_click_next_white)
+		self.next_white.hide()
 
 
 		self.buttonReset = QPushButton('Reset', self)
@@ -156,6 +166,44 @@ class App(QWidget):
 		self.thread.change_pixmap_signal.connect(self.update_image)
 		# start the thread
 		self.thread.start()
+
+
+	@ pyqtSlot()
+	def play_as_white(self):
+		global chessboard
+
+		# Estrazione delle case della matrice
+		if boxes_found:
+			boxes = boxes_matrix(img_chessboard, coordinates)
+
+		# Creazione matrice posizionale
+		matrix = find_pieces(boxes, "all")
+
+		if isStart(matrix):
+			# La scacchiera è nel suo stato iniziale
+			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+			# Aggiorna pulsanti
+			self.solitario.hide()
+			self.White.hide()
+			self.Black.hide()
+			self.next_white.show()
+			self.buttonReset.show()
+
+			# Aggiorno la scacchiera a schermo
+			self.updateChessboard(chessboard)
+
+		elif isEmpty(matrix):
+			pass
+
+
+
+
+	@pyqtSlot()
+	def play_as_black(self):
+		pass
+
+
 
 	@ pyqtSlot()
 	def on_click_solitario(self):
@@ -200,6 +248,51 @@ class App(QWidget):
 
 		chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 		self.updateChessboard(chessboard)
+
+
+	@pyqtSlot()
+	def on_click_next_white(self):
+		# Variabile globale da utilizzare
+		global oldwhite
+
+		# Estrazione delle case della matrice
+		if boxes_found:
+			boxes = boxes_matrix(img_chessboard, coordinates)
+
+
+		# Estrazione matrice posizionale bianca
+		matrix = find_pieces(boxes, "white")
+		# Elaborazione mossa del bianco
+		try:
+			move = get_move(oldwhite, matrix, chessboard)
+			chessboard.push_uci(move)
+		except:
+			print("Mossa non valida")
+			return
+
+
+		# Vittoria per il bianco
+		if (chessboard.is_checkmate()):
+			print("Il bianco ha vinto!")
+
+		# Aggiorna la scacchiera a schermo
+		self.updateChessboard(chessboard)
+		# Sovrascrivere variabile dello stato precedente con il nuovo stato
+		oldwhite = matrix
+
+
+		fen = chessboard.fen()
+		stockfish.set_fen_position(fen)
+
+		best_move = stockfish.get_best_move()
+		chessboard.push_uci(best_move)
+
+		oldwhite = computer_black_move(best_move,oldwhite)
+
+		# Aggiorna la scacchiera a schermo
+		self.updateChessboard(chessboard)
+
+
 
 	@pyqtSlot()
 	def on_click_next(self):
@@ -273,6 +366,7 @@ class App(QWidget):
 			#Sovrascrivere variabile dello stato precedente con il nuovo stato
 			oldblack = matrix
 			return
+
 	"""
 	@pyqtSlot()
 	def winMessage(self,player):
