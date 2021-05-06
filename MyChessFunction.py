@@ -341,7 +341,7 @@ def print_positional_matrix(matrix):
             print(matrix[x][y], end='  ')
         print("")
 
-def get_move(old,new,chessboard,old_opp):
+def get_move_single(old,new,chessboard,old_opp):
 
     matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
                          ["h2","g2","f2","e2","d2","c2","b2","a2"],
@@ -665,10 +665,6 @@ def computer_black_move(move,oldwhite):
                 oldwhite[x][y] = 0
 
     return oldwhite
-
-
-
-
 
 
 def parse_move(move):

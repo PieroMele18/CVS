@@ -3,6 +3,7 @@ Alcune delle funzioni che utilizzerò all'interno del programma
 sono presneti nelle librerie da me definite
 """
 from PyQt5.QtSvg import QSvgWidget
+from PyQt5.uic.properties import QtCore
 
 from MyChessFunction import *
 from Calibration import *
@@ -126,6 +127,13 @@ class App(QWidget):
 		self.solitario.setGeometry(650, 70, 100, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
+		self.label = QLabel("left",self)
+		self.label.frameShadow()
+		self.label.setGeometry(950, 450, 400, 200)
+		self.label.setStyleSheet("background-color: white; border: 1px solid black;")
+		self.label.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
+		self.label.hide()
+
 
 		self.White = QPushButton('Gioca con il bianco', self)
 		self.White.setToolTip('This is an example button')
@@ -220,11 +228,13 @@ class App(QWidget):
 		if isStart(matrix):
 			#La scacchiera è nel suo stato iniziale
 			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-
 			#Aggiorna pulsanti
 			self.solitario.hide()
 			self.button.show()
 			self.buttonReset.show()
+			self.label.show()
+			self.White.hide()
+			self.Black.hide()
 
 			#Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -292,7 +302,16 @@ class App(QWidget):
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
 
+	def on_update_moves(self,chessboard):
 
+		stack_moves = ""
+		index_move = 2
+
+		for move in chessboard.move_stack:
+			stack_moves = stack_moves + str(int(index_move/2)) + "." + chessboard.uci(move) + " "
+			index_move = index_move + 1
+
+		self.label.setText(stack_moves)
 
 	@pyqtSlot()
 	def on_click_next(self):
@@ -312,10 +331,11 @@ class App(QWidget):
 
 			#Estrazione matrice posizionale bianca
 			matrix = find_pieces(boxes, "white")
-			#Elaborazione mossa del bianco
-			move = get_move(oldwhite, matrix,chessboard,oldblack)
+
 
 			try :
+				#Elaborazione mossa del bianco
+				move = get_move_single(oldwhite, matrix,chessboard,oldblack)
 				chessboard.push_uci(move)
 			except :
 				print("Mossa non valida")
@@ -327,6 +347,8 @@ class App(QWidget):
 			#Vittoria per il bianco
 			if(chessboard.is_checkmate()):
 				print("Il bianco ha vinto!")
+
+			self.on_update_moves(chessboard)
 
 			#Gestione dei turni
 			isWhiteTurn = False
@@ -342,9 +364,10 @@ class App(QWidget):
 		if isBlackTurn:
 			#Estrazione matrice posizionale nera
 			matrix = find_pieces(boxes, "black")
-			# Elaborazione mossa del bianco
-			move = get_move(oldblack, matrix,chessboard,oldwhite)
+
 			try:
+				# Elaborazione mossa del bianco
+				move = get_move_single(oldblack, matrix, chessboard, oldwhite)
 				chessboard.push_uci(move)
 			except:
 				print("Mossa non valida")
@@ -357,6 +380,8 @@ class App(QWidget):
 			#Vittoria per il bianco
 			if(chessboard.is_checkmate()):
 				print("Il nero ha vinto!")
+
+			self.on_update_moves(chessboard)
 
 			#Passa il turno
 			isWhiteTurn = True
