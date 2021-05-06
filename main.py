@@ -132,6 +132,7 @@ class App(QWidget):
 		self.label.setGeometry(950, 450, 400, 200)
 		self.label.setStyleSheet("background-color: white; border: 1px solid black;")
 		self.label.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
+		self.label.setWordWrap(True)
 		self.label.hide()
 
 
