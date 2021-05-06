@@ -1,59 +1,106 @@
 """
 Alcune delle funzioni che utilizzerò all'interno del programma
-sono presneti nelle librerie da me definite
-"""
-from PyQt5.QtSvg import QSvgWidget
-from PyQt5.uic.properties import QtCore
+sono presenti all'interno delle librerie da me definite :
 
+- MyChessFunction , Contente le funzioni che fungono da interfaccia
+tra OpenCV e il sistema di scacchi
+-Calibration , per la calibrazione della camera e la creazione di set
+per la medesima funzione
+- Game_chess , contenente alcune funzioni utili per interfacciarsi con
+il motore di scacchi
+"""
+# noinspection PyUnresolvedReferences
 from MyChessFunction import *
+# noinspection PyUnresolvedReferences
 from Calibration import *
-from teachableMachine import *
 from game_chess import *
 
+
+
 """
-Librerie esterne in uso all'interno del programma :
-cv2 per la computer vision 
-python-chess per la parte legata al motore di scacchi
+Librerie esterne in uso all'interno del programma : 
+-chess e chess.engine per la parte legata al motore di scacchi
+-stockfish per le partite contro la CPU  
 """
 import chess
 import chess.engine
+from stockfish import Stockfish
+
+"""Tutte le librerie cui sotto sono state utilizzate per la
+definizione dell'interfaccia e delle sue parti : 
+Ho preferito utilizzare PyQt5 per la compatibilità rispetto ai file
+SVG , formato nel quale la scacchiera viene codificata"""
+from PyQt5.QtSvg import QSvgWidget
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton , QMessageBox
 from PyQt5.QtGui import QPixmap
-import sys
-import cv2
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
+import sys
+
+"""Classe per la gestione della visione artificiale e per
+la elaborazione delle immagini """
+# noinspection PyUnresolvedReferences
+import cv2
+
+"""Classe per la gestione delle matrici presenti all'interno 
+del programma e gestione numerica di una serie di funzioni """
 import numpy as np
-from stockfish import Stockfish
-#DEFINIZIONE VARIABILI UTILI
+
+
+"""Variabili utili per il corretto funzionamento del programma :
+per lo più flag , ma anche variabili globali che ho usato all'interno 
+delle funzioni di gioco """
+
+# Flag che indica se la scacchiera è stata trovata
 chessboard_found = False
+# Flag che indica se le case della scacchiera sono state trovate
 boxes_found = False
+# Variabile contente le coordinate dei punti che costiuiscono le case
 chessboard_corners = None
+# Variabile contente i quattro vertici della scacchiera
 box_corners = None
+# Immagine della scacchiera ( da webcam )
 img_chessboard = None
+# Variabile contente tutte le coordinate della scacchiera ( case comprese )
 coordinates = None
+# Flag per la gestione dei turni
 isWhiteTurn = True
 isBlackTurn = False
+# Matrice per lo stato S0 per quanto riguarda entrambi i lati di gioco
 oldblack = setBlack()
 oldwhite = setWhite()
+# Oggetto di tipo scacchiera , contenente lo stato di gioco
 chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
+# Motore Stockfish , per la scelta delle mosse migliori e per la gestione delle partite vs CPU
 stockfish = Stockfish ("stockfish-10-win\Windows\stockfish_10_x64")
 
+
+"""Classe che estende un Thread per l'utilizzo della schermata
+della webcam , che riprende la scacchiera , all'interno 
+dell'interfaccia . Oltre al costruttore , sono presenti la funzione 
+di stop per chiudere la finestra e quella di run , che elabora 
+l'immagine e ottiene le informazioni utili relative al posizionamento 
+della scacchiera e delle case """
 class VideoThread(QThread):
+
 	change_pixmap_signal = pyqtSignal(np.ndarray)
 
+	# Costruttore della classe
 	def __init__(self):
 		super().__init__()
 		self._run_flag = True
 
+	# Corpo del thread
 	def run(self):
-		# GESTIONE WEBCAM
+
+		# Gestione webcam
 		webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-		# CALIBRAZIONE WEBCAM
+		# Calibrazione webcam
 		ret, mtx, dist, rvecs, tvecs, h, w = camera_calibration()
 		newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 
+		# Ciclo per la cattura dei frame
 		while self._run_flag:
 			success, img = webcam.read()
 
@@ -64,70 +111,92 @@ class VideoThread(QThread):
 
 				# Pre-Elaborazione dell'immagine
 				img_ = pre_processing(img)
-				# Ricerca della scacchiera
 
-				#DEFINIZIONE VARIABILI GLOBALI
+
+				# Definizione delle variabili globali da utilizzare nel corpo del metodo
 				global chessboard_found
 				global chessboard_corners
 
+				# Nel caso la scacchiera è stata già trovata , la ricerca viene conclusa
 				if(chessboard_found == False):
 					#Ricerca della scacchiera
 					chessboard_found,  chessboard_corners = cv2.findChessboardCorners(img_, (7, 7), None)
 
 				# Se la scacchiera è stata trovata
 				if chessboard_found:
-					# Ricerca della scacchiera
 
-					#VARIABILE GLOBALE UTILIZZATA
+					# Variabile globale per l'immagine della scacchiera
 					global img_chessboard
 
+					# L'immagine della scacchiera viene estratta
 					img_chessboard  = get_chessboard(img, chessboard_found, chessboard_corners)
-					# Ricerca delle case della scacchiera se queste non sono state mai trovate
 
-					#DEFINIZIONE VARIABILI GLOBALI
+
+					# Definizione nuove variabili globali in utilizzo
 					global boxes_found
 					global box_corners
 					global coordinates
 
+					# Ricerca delle case della scacchiera se queste non sono state mai trovate
 					if boxes_found == False:
 						#Ricerca della case all'interno della scacchiera
 						boxes_found, box_corners = cv2.findChessboardCorners(pre_processing(img_chessboard), (7, 7), None)
+						#Salvataggio delle coordinate all'interno di una struttura dati
 						coordinates = get_final_coordinates(box_corners)
 
+				# Salvataggio immagine per il thread
 				self.change_pixmap_signal.emit(img_chessboard)
 
-		# shut down capture system
+		# Rilascio risorse allocate al termine delle operazioni
 		webcam.release()
 
+
+	# Quando il programma viene terminato
 	def stop(self):
-		"""Sets run flag to False and waits for thread to finish"""
 		self._run_flag = False
 		self.wait()
 
+
+"""Classe per la definizione dell'interfaccia del programma"""
 class App(QWidget):
 	def __init__(self):
 		super().__init__()
 
-
+		"""Definizione della dimensione della finestra principale
+		oltre alla definizione di una icona e di un nome per
+		la stessa """
 		self.setWindowTitle("Chess Computer System ")
 		self.display_width = 1080
 		self.display_height = 720
 		self.setWindowIcon(QtGui.QIcon("horse.png"))
 
-		# create the label that holds the image
+		"""Definizione di una finestra all'interno della quale 
+		verrà visualizzata l'istanza relativa alla webcam , quindi 
+		la scacchiera in live """
 		self.image_label = QLabel(self)
 		self.image_label.setGeometry(10,10,400,400)
 
-		# mostra scacchiera all'interno dell'interfaccia
+		"""Definzione di una finestra all'interno della quale verà 
+		visualizzata la scacchiera elaborata a partire da un file svg"""
 		self.widgetSvg = QSvgWidget(parent=self)
 		self.widgetSvg.setGeometry(950, 10, 400, 400)
 
+		"""Definizione di un pulsante per la modalità di analisi: 
+		ho utilizzto questa modalità per lo più per testare le funzioni 
+		e la funzionalità di alcuni strumenti, tra cui il riconoscimento 
+		dei pezzi all'interno della scacchiera """
 		self.solitario = QPushButton('Gioco solitario', self)
 		self.solitario.setToolTip('This is an example button')
 		self.solitario.setGeometry(650, 70, 100, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
-		self.label = QLabel("left",self)
+
+		"""Definizione di un etichetta che rappresenterà la stringa delle 
+		mosse eseguite : l'etichetta presenta dei contorni e un colore di 
+		sfondo , oltre a delle ombre per rendere l'interfaccia più
+		piacevole. La stampa delle stringhe all'interno della stessa parte 
+		dall'alto a destra ( SetAligment ) """
+		self.label = QLabel("Qui verranno stampate le tue mosse",self)
 		self.label.frameShadow()
 		self.label.setGeometry(950, 450, 400, 200)
 		self.label.setStyleSheet("background-color: white; border: 1px solid black;")
@@ -135,45 +204,53 @@ class App(QWidget):
 		self.label.setWordWrap(True)
 		self.label.hide()
 
-
+		"""Definizione di un pulsante per la modalità di gioco : 
+		Bianco vs CPU """
 		self.White = QPushButton('Gioca con il bianco', self)
 		self.White.setToolTip('This is an example button')
 		self.White.setGeometry(650, 130, 100, 40)
 		self.White.clicked.connect(self.play_as_white)
-
+		"""Definizione di un pulsante per la modalità di gioco : 
+		Nero  vs CPU """
 		self.Black = QPushButton('Gioca con il nero', self)
 		self.Black.setToolTip('This is an example button')
 		self.Black.setGeometry(650, 190, 100, 40)
 		self.Black.clicked.connect(self.play_as_black)
 
 
-
+		"""Pulsante per confermare l'esecuzione di una mossa """
 		self.button = QPushButton('Prossima mossa', self)
 		self.button.setGeometry(650, 70, 100, 40)
 		self.button.clicked.connect(self.on_click_next)
 		self.button.hide()
 
-
+		"""Pulsante per confermare l'esecuzione della mossa,
+		utilizzato nella modalità di gioco Bianco Vs Cpu"""
 		self.next_white = QPushButton('Prossima mossa', self)
 		self.next_white.setGeometry(650, 70, 100, 40)
 		self.next_white.clicked.connect(self.on_click_next_white)
 		self.next_white.hide()
 
-
+		"""Pulsante per effettuare il reset della scacchiera
+		e dello stato di gioco (Ad esempio quando si vuole 
+		 iniziare una nuova partita) """
 		self.buttonReset = QPushButton('Reset', self)
 		self.buttonReset.setGeometry(650, 120, 100, 40)
 		self.buttonReset.clicked.connect(self.on_click_reset)
 		self.buttonReset.hide()
 
+		"""Codifica della scacchiera formato svg per la lettura 
+		e scrittura all'interno della finestra preposta """
 		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
 		self.widgetSvg.load(self.chessboardSvg)
 
 
-		# create the video capture thread
+		"""Utilizzo di un thread per la gestione del video 
+		catturato dalla webcam che ritrae la scacchiera : è 
+		necessario utilizzare un thread per non bloccare 
+		l'interfaccia ( INR ) """
 		self.thread = VideoThread()
-		# connect its signal to the update_image slot
 		self.thread.change_pixmap_signal.connect(self.update_image)
-		# start the thread
 		self.thread.start()
 
 
@@ -198,6 +275,7 @@ class App(QWidget):
 			self.Black.hide()
 			self.next_white.show()
 			self.buttonReset.show()
+			self.label.show()
 
 			# Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -299,6 +377,8 @@ class App(QWidget):
 		chessboard.push_uci(best_move)
 
 		oldwhite = computer_black_move(best_move,oldwhite)
+
+		self.on_update_moves(chessboard)
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
