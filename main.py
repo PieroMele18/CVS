@@ -32,9 +32,10 @@ Ho preferito utilizzare PyQt5 per la compatibilità rispetto ai file
 SVG , formato nel quale la scacchiera viene codificata"""
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton , QMessageBox
+from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton, QMessageBox, QToolTip, QMenuBar, \
+	QMenu, QAction, QFrame, QProgressBar
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread, QTimer
 import sys
 
 """Classe per la gestione della visione artificiale e per
@@ -45,6 +46,9 @@ import cv2
 """Classe per la gestione delle matrici presenti all'interno 
 del programma e gestione numerica di una serie di funzioni """
 import numpy as np
+
+"""Utilizzato per la gestione della Splash Screen"""
+from datetime import time
 
 
 """Variabili utili per il corretto funzionamento del programma :
@@ -75,6 +79,8 @@ chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
 stockfish = Stockfish ("stockfish-10-win\Windows\stockfish_10_x64")
 
 
+isLoading = True
+
 """Classe che estende un Thread per l'utilizzo della schermata
 della webcam , che riprende la scacchiera , all'interno 
 dell'interfaccia . Oltre al costruttore , sono presenti la funzione 
@@ -92,6 +98,8 @@ class VideoThread(QThread):
 
 	# Corpo del thread
 	def run(self):
+
+		set_model()
 
 		# Gestione webcam
 		webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -156,38 +164,64 @@ class VideoThread(QThread):
 		self._run_flag = False
 		self.wait()
 
-
 """Classe per la definizione dell'interfaccia del programma"""
 class App(QWidget):
 	def __init__(self):
 		super().__init__()
 
+		global isLoading
+		isLoading = False
+
 		"""Definizione della dimensione della finestra principale
 		oltre alla definizione di una icona e di un nome per
 		la stessa """
 		self.setWindowTitle("Chess Computer System ")
+		self.setObjectName("main_window")
 		self.display_width = 1080
 		self.display_height = 720
 		self.setWindowIcon(QtGui.QIcon("horse.png"))
+
+
+		"""Inserimento di un logo per riempire la interfacia"""
+		self.logo = QLabel(self)
+		self.logo.setGeometry(640,130,512,512)
+		icon = QPixmap("horse.png")
+		icon = icon.scaled(120,120)
+		self.logo.setPixmap(icon)
+
+		"""Contorno per l'immagine della webcam nella home"""
+		self.backgroundweb = QLabel(self)
+		self.backgroundweb.setGeometry(40,30,400,400)
+		img_back = QPixmap("weback.png")
+		img_back = img_back.scaled(400,400)
+		self.backgroundweb.setPixmap(img_back)
+
 
 		"""Definizione di una finestra all'interno della quale 
 		verrà visualizzata l'istanza relativa alla webcam , quindi 
 		la scacchiera in live """
 		self.image_label = QLabel(self)
-		self.image_label.setGeometry(10,10,400,400)
+		self.image_label.setGeometry(55,45,370,370)
+		self.image_label.setObjectName("LiveChessboard")
+		self.image_label.setStyleSheet("border: 1px solid #202121;")
+
+
+
 
 		"""Definzione di una finestra all'interno della quale verà 
 		visualizzata la scacchiera elaborata a partire da un file svg"""
 		self.widgetSvg = QSvgWidget(parent=self)
-		self.widgetSvg.setGeometry(950, 10, 400, 400)
+		self.widgetSvg.setGeometry(920, 30, 400, 400)
+
+
 
 		"""Definizione di un pulsante per la modalità di analisi: 
 		ho utilizzto questa modalità per lo più per testare le funzioni 
 		e la funzionalità di alcuni strumenti, tra cui il riconoscimento 
 		dei pezzi all'interno della scacchiera """
-		self.solitario = QPushButton('Gioco solitario', self)
-		self.solitario.setToolTip('This is an example button')
-		self.solitario.setGeometry(650, 70, 100, 40)
+		self.solitario = QPushButton('Analisi partita', self)
+		self.solitario.setToolTip('Motore di analisi')
+		self.solitario.setGeometry(600, 70, 200, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
 
@@ -196,10 +230,12 @@ class App(QWidget):
 		sfondo , oltre a delle ombre per rendere l'interfaccia più
 		piacevole. La stampa delle stringhe all'interno della stessa parte 
 		dall'alto a destra ( SetAligment ) """
-		self.label = QLabel("Qui verranno stampate le tue mosse",self)
+		self.label = QLabel("Qui verranno mostrate le tue mosse",self)
 		self.label.frameShadow()
-		self.label.setGeometry(950, 450, 400, 200)
-		self.label.setStyleSheet("background-color: white; border: 1px solid black;")
+		self.label.setGeometry(920, 450, 400, 200)
+		self.label.setStyleSheet("""background-color: #eff4f7; border-radius:5px;
+				border:1px solid #141010;font-family:Arial;
+				font-size:12px;""")
 		self.label.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
 		self.label.setWordWrap(True)
 		self.label.hide()
@@ -207,27 +243,27 @@ class App(QWidget):
 		"""Definizione di un pulsante per la modalità di gioco : 
 		Bianco vs CPU """
 		self.White = QPushButton('Gioca con il bianco', self)
-		self.White.setToolTip('This is an example button')
-		self.White.setGeometry(650, 130, 100, 40)
+		self.White.setToolTip('Clicca per giocare contro il Computer')
+		self.White.setGeometry(600, 130, 200, 40)
 		self.White.clicked.connect(self.play_as_white)
 		"""Definizione di un pulsante per la modalità di gioco : 
 		Nero  vs CPU """
 		self.Black = QPushButton('Gioca con il nero', self)
-		self.Black.setToolTip('This is an example button')
-		self.Black.setGeometry(650, 190, 100, 40)
+		self.Black.setToolTip('Clicca per giocare contro il Computer')
+		self.Black.setGeometry(600, 190, 200, 40)
 		self.Black.clicked.connect(self.play_as_black)
 
 
 		"""Pulsante per confermare l'esecuzione di una mossa """
 		self.button = QPushButton('Prossima mossa', self)
-		self.button.setGeometry(650, 70, 100, 40)
+		self.button.setGeometry(600, 70, 200, 40)
 		self.button.clicked.connect(self.on_click_next)
 		self.button.hide()
 
 		"""Pulsante per confermare l'esecuzione della mossa,
 		utilizzato nella modalità di gioco Bianco Vs Cpu"""
 		self.next_white = QPushButton('Prossima mossa', self)
-		self.next_white.setGeometry(650, 70, 100, 40)
+		self.next_white.setGeometry(600, 70, 200, 40)
 		self.next_white.clicked.connect(self.on_click_next_white)
 		self.next_white.hide()
 
@@ -235,9 +271,23 @@ class App(QWidget):
 		e dello stato di gioco (Ad esempio quando si vuole 
 		 iniziare una nuova partita) """
 		self.buttonReset = QPushButton('Reset', self)
-		self.buttonReset.setGeometry(650, 120, 100, 40)
+		self.buttonReset.setGeometry(600, 120, 200, 40)
 		self.buttonReset.clicked.connect(self.on_click_reset)
 		self.buttonReset.hide()
+
+
+		self.home = QPushButton("Torna alla home")
+		self.home.setGeometry(600, 220, 200, 40)
+		self.home.clicked.connect(self.on_click_reset)
+		self.home.hide()
+
+
+		"""Pulsante per effettuare la ricerca della scacchiera"""
+		self.findChessboard = QPushButton('Ricerca Scacchiera', self)
+		self.findChessboard.setGeometry(600, 250, 200, 40)
+		self.findChessboard.clicked.connect(self.search_chessboard)
+
+
 
 		"""Codifica della scacchiera formato svg per la lettura 
 		e scrittura all'interno della finestra preposta """
@@ -245,13 +295,42 @@ class App(QWidget):
 		self.widgetSvg.load(self.chessboardSvg)
 
 
-		"""Utilizzo di un thread per la gestione del video 
-		catturato dalla webcam che ritrae la scacchiera : è 
-		necessario utilizzare un thread per non bloccare 
-		l'interfaccia ( INR ) """
-		self.thread = VideoThread()
-		self.thread.change_pixmap_signal.connect(self.update_image)
-		self.thread.start()
+	@pyqtSlot()
+	def back_home(self):
+
+		global isWhiteTurn
+		global isBlackTurn
+		global oldblack
+		global oldwhite
+		global chessboard
+
+		isWhiteTurn = True
+		isBlackTurn = False
+
+		oldblack = setBlack()
+		oldwhite = setWhite()
+
+		chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
+		self.updateChessboard(chessboard)
+		self.label.setText("")
+
+		# Aggiorna pulsanti
+		self.solitario.show()
+		self.White.show()
+		self.Black.show()
+		self.next_white.hide()
+		self.buttonReset.hide()
+		self.label.hide()
+		self.search_chessboard.show()
+		self.home.hide()
+
+	@pyqtSlot()
+	def search_chessboard(self):
+
+		global chessboard_found , boxes_found
+
+		chessboard_found = False
+		boxes_found = False
 
 
 	@ pyqtSlot()
@@ -276,14 +355,28 @@ class App(QWidget):
 			self.next_white.show()
 			self.buttonReset.show()
 			self.label.show()
+			self.findChessboard.hide()
+			self.home.show()
 
 			# Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
 
 		elif isEmpty(matrix):
-			pass
+			# La scacchiera è nel suo stato iniziale
+			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
+			# Aggiorna pulsanti
+			self.solitario.hide()
+			self.White.hide()
+			self.Black.hide()
+			self.next_white.show()
+			self.buttonReset.show()
+			self.label.show()
+			self.findChessboard.hide()
+			self.home.show()
 
+			# Aggiorno la scacchiera a schermo
+			self.updateChessboard(chessboard)
 
 
 	@pyqtSlot()
@@ -314,6 +407,7 @@ class App(QWidget):
 			self.label.show()
 			self.White.hide()
 			self.Black.hide()
+			self.findChessboard.hide()
 
 			#Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -337,6 +431,7 @@ class App(QWidget):
 
 		chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 		self.updateChessboard(chessboard)
+		self.label.setText("")
 
 
 	@pyqtSlot()
@@ -473,24 +568,6 @@ class App(QWidget):
 			oldblack = matrix
 			return
 
-	"""
-	@pyqtSlot()
-	def winMessage(self,player):
-		self.msg = QMessageBox()
-		self.msg.setIcon(QMessageBox.Information)
-
-		if(player == "white "):
-			self.msg.setText("Il bianco ha vinto")
-		else:
-			self.msg.setText("Il nero ha vinto")
-
-		self.msg.setStandardButtons(QMessageBox.Ok)
-	"""
-
-	def closeEvent(self, event):
-		self.thread.stop()
-		event.accept()
-
 
 	@pyqtSlot()
 	def updateChessboard(self,chessboard):
@@ -513,11 +590,196 @@ class App(QWidget):
 		p = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
 		return QPixmap.fromImage(p)
 
+
+class SplashScreen(QWidget):
+	def __init__(self):
+		super().__init__()
+		self.setWindowTitle('Spash Screen')
+		self.setFixedSize(1100, 500)
+		self.setWindowFlag(Qt.FramelessWindowHint)
+		self.setAttribute(Qt.WA_TranslucentBackground)
+
+		self.counter = 0
+		self.n = 200 # total instance
+
+		self.initUI()
+
+		"""Utilizzo di un thread per la gestione del video 
+		catturato dalla webcam che ritrae la scacchiera : è 
+		necessario utilizzare un thread per non bloccare 
+		l'interfaccia ( INR ) """
+		self.thread = VideoThread()
+		self.thread.change_pixmap_signal.connect(self.update_image)
+		self.thread.start()
+
+		self.timer = QTimer()
+		self.timer.timeout.connect(self.loading)
+		self.timer.start(30)
+
+
+
+	def initUI(self):
+		layout = QVBoxLayout()
+		self.setLayout(layout)
+
+		self.frame = QFrame()
+		self.frame.setObjectName('FrameLoader')
+		layout.addWidget(self.frame)
+
+
+		self.labelTitle = QLabel(self.frame)
+		self.labelTitle.setObjectName('LabelTitle')
+
+		# center labels
+		self.labelTitle.resize(self.width() - 10, 150)
+		self.labelTitle.move(0, 40) # x, y
+		self.labelTitle.setText('Chess Computer Vision System')
+		self.labelTitle.setAlignment(Qt.AlignCenter)
+
+		self.labelDescription = QLabel(self.frame)
+		self.labelDescription.resize(self.width() - 10, 50)
+		self.labelDescription.move(0, self.labelTitle.height())
+		self.labelDescription.setObjectName('LabelDesc')
+		self.labelDescription.setText('<strong>Gestione intelligenza artificiale</strong>')
+		self.labelDescription.setAlignment(Qt.AlignCenter)
+
+		self.progressBar = QProgressBar(self.frame)
+		self.progressBar.resize(self.width() - 200 - 10, 50)
+		self.progressBar.move(100, self.labelDescription.y() + 130)
+		self.progressBar.setAlignment(Qt.AlignCenter)
+		self.progressBar.setFormat('%p%')
+		self.progressBar.setTextVisible(True)
+		self.progressBar.setRange(0, self.n)
+		self.progressBar.setValue(20)
+
+		self.labelLoading = QLabel(self.frame)
+		self.labelLoading.resize(self.width() - 10, 50)
+		self.labelLoading.move(0, self.progressBar.y() + 70)
+		self.labelLoading.setObjectName('LabelLoading')
+		self.labelLoading.setAlignment(Qt.AlignCenter)
+		self.labelLoading.setText('caricamento...')
+
+	@pyqtSlot(np.ndarray)
+	def update_image(self, cv_img):
+		"""Updates the image_label with a new opencv image"""
+		qt_img = self.convert_cv_qt(cv_img)
+		if(not isLoading):
+			self.myApp.image_label.setPixmap(qt_img)
+
+	def convert_cv_qt(self, cv_img):
+		"""Convert from an opencv image to QPixmap"""
+		cv_img = cv2.rotate(cv_img, cv2.ROTATE_180)
+		rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+		h, w, ch = rgb_image.shape
+		bytes_per_line = ch * w
+		p = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+		return QPixmap.fromImage(p)
+
+	def closeEvent(self, event):
+		if(not isLoading):
+			self.thread.stop()
+			event.accept()
+
+	def loading(self):
+
+		self.progressBar.setValue(self.counter)
+
+		if self.counter == int(self.n * 0.3):
+			self.labelDescription.setText('<strong>Gestione visione artificiale</strong>')
+		elif self.counter == int(self.n * 0.6):
+			self.labelDescription.setText('<strong>Caricamento motore di scacchi</strong>')
+		elif self.counter >= self.n:
+			self.timer.stop()
+			self.close()
+
+
+			self.myApp = App()
+			self.myApp.show()
+
+		self.counter += 1
+
 if __name__=="__main__":
 	app = QApplication(sys.argv)
-	app.setStyle('Fusion')
-	a = App()
-	a.show()
-	sys.exit(app.exec_())
+	app.setStyleSheet('''
+			#LabelTitle {
+				font-size: 60px;
+				color: #93deed;
+			}
 
+			#LabelDesc {
+				font-size: 30px;
+				color: #c2ced1;
+			}
+
+			#LabelLoading {
+				font-size: 30px;
+				color: #e8e8eb;
+			}
+
+			#FrameLoader {
+				background-color: #2F4454;
+				color: rgb(220, 220, 220);
+			}
+
+			QProgressBar {
+				background-color: #DA7B93;
+				color: rgb(200, 200, 200);
+				border-style: none;
+				border-radius: 10px;
+				text-align: center;
+				font-size: 30px;
+			}
+
+			QProgressBar::chunk {
+				border-radius: 10px;
+				background-color: qlineargradient(spread:pad x1:0, x2:1, y1:0.511364, y2:0.523, stop:0 #1C3334, stop:1 #376E6F);
+			}
+			
+			
+			#main_window{
+				background-color : #2f4455;					
+			}
+				
+			QPushButton{
+				background:linear-gradient(to bottom, #8b9294 5%, #70787a 100%);
+				background-color:#8b9294;
+				border-radius:8px;
+				border:2px solid #141010;
+				display:inline-block;
+				cursor:pointer;
+				color:#ffffff;
+				font-family:Arial;
+				font-size:21px;
+				text-decoration:none;
+				text-shadow:0px 1px 0px #000000;
+			}
+			
+			
+			QPushButton:hover {
+				background:linear-gradient(to bottom, #70787a 5%, #8b9294 100%);
+				background-color:#70787a;
+			}
+			
+			QPushButton:active {
+				position:relative;
+				top:1px;
+			}
+			
+			
+			#LiveChessboard {
+				border : 3px gray;
+			}
+			
+		''')
+
+	splash = SplashScreen()
+	splash.show()
+
+	app.setStyle('Fusion')
+
+
+	try:
+		sys.exit(app.exec_())
+	except SystemExit:
+		print('Closing Window...')
 

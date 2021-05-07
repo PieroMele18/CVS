@@ -30,7 +30,7 @@ def draw_chessboard_sides(img,found,corners):
 
 def get_chessboard(img,found,corners):
     if found :
-        width, height = 390, 390
+        width, height = 370, 370
         coord = extreme_corners(corners)
         a,b,d,c = get_coordinates(coord[0]),get_coordinates(coord[1]),get_coordinates(coord[2]),get_coordinates(coord[3])
         pts1 = np.float32([[a[0], a[1]],
