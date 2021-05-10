@@ -1,11 +1,10 @@
 """Import di alcune librerie utili :
 Numpy per gestire le matrice
-Opencv per gestire la parte della visione artificiale"""
-import operator
-
-import numpy as np
-import cv2
+Opencv per gestire la parte della visione artificiale
+chess per la gestione della scacchiera e del gioco """
 import chess
+import cv2
+import numpy as np
 
 """Restituisce una tupla che costituisce 
 le coordinate dei punti , contenuti all'interno
@@ -13,7 +12,8 @@ di una struttura vettoriale (singolo elemento)"""
 def get_coordinates(coordinates):
     return int(coordinates[0]),int(coordinates[1])
 
-"""Stampa i bordi della scacchiera"""
+"""Stampa i bordi della scacchiera , di colore verde
+all'interno dell'immagine catturata dalla webcam """
 def draw_chessboard_sides(img,found,corners):
     if found:
         coord = extreme_corners(corners)
@@ -28,6 +28,10 @@ def draw_chessboard_sides(img,found,corners):
 
     return img
 
+
+"""Estrae l'immagine della scacchiera, 
+a partire dall'immagine catturata dalla webcam e dai 
+punti che costituiscono le coordinate della stessa"""
 def get_chessboard(img,found,corners):
     if found :
         width, height = 370, 370
@@ -45,33 +49,39 @@ def get_chessboard(img,found,corners):
 """Crea una matrice costituita dagli estremi della scacchiera"""
 def extreme_corners(corners):
 
+
+    # Definzione matrice per i quattro angoli
     extreme_corners = np.zeros(shape=(4,2))
 
-    #Primo Punto
+    # Primo Punto
     a = corners[0]
     b = corners[8]
 
+    # Calcolo della distanza euclidea
     extreme_corners[0][0] = a[0][0] - (b[0][0]-a[0][0])
     extreme_corners[0][1] = a[0][1] - (b[0][1]-a[0][1])
 
-    #Secondo Punto
+    # Secondo Punto
     a = corners[6]
     b = corners[12]
 
+    # Calcolo della distanza euclidea
     extreme_corners[1][0] = a[0][0] - (b[0][0]-a[0][0])
     extreme_corners[1][1] = a[0][1] - (b[0][1]-a[0][1])
 
-    #Terzo Punto
+    # Terzo Punto
     b = corners[36]
     a = corners[42]
 
+    # Calcolo della distanza euclidea
     extreme_corners[2][0] = a[0][0] - (b[0][0]-a[0][0])
     extreme_corners[2][1] = a[0][1] - (b[0][1]-a[0][1])
 
-    #Quarto Punto
+    # Quarto Punto
     b = corners[40]
     a = corners[48]
 
+    # Calcolo della distanza euclidea
     extreme_corners[3][0] = a[0][0] - (b[0][0]-a[0][0])
     extreme_corners[3][1] = a[0][1] - (b[0][1]-a[0][1])
 
@@ -247,6 +257,8 @@ def get_final_coordinates(corners):
 
     return final_coordinates;
 
+"""Trackbar per la gestione dell'immagine , all'interno del processo 
+per il riconoscimento dei pezzi basato """
 def get_trackbar():
     cv2.namedWindow("TrackBar")
     cv2.resizeWindow("TrackBar", 640, 240)
@@ -257,6 +269,8 @@ def get_trackbar():
     cv2.createTrackbar("Val Min", "TrackBar", 0, 255, empty)
     cv2.createTrackbar("Val Max","TrackBar",255,255,empty)
 
+
+"""Impostazione parametri presi dalla trackbar"""
 def hsv_test(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     h_min = cv2.getTrackbarPos("Hue Min","TrackBar")
@@ -272,31 +286,32 @@ def hsv_test(img):
 
     cv2.imshow("Test",mask)
 
+
+"""Test per il riconoscimento differenziale"""
 def diff_test(img):
 
     board = cv2.imread("Chessboard.jpg")
-    #board = cv2.cvtColor(board,cv2.COLOR_BGR2GRAY)
 
     cv2.imshow("board",board)
     cv2.imshow("img",img)
     result = cv2.subtract(board,img)
-    diff_gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-
-    #h_min = cv2.getTrackbarPos("Hue Min", "TrackBar")
-    #h_max = cv2.getTrackbarPos("Hue Max", "TrackBar")
-    #matrix, result = cv2.threshold(diff_gray, h_min, h_max, cv2.THRESH_BINARY)
 
     return result
 
+"""Funzione vuota per la trackbar"""
 def empty(x):
     pass
 
+"""Funzione per la calibrazione dell'immagine"""
 def undistort(img,mtx,dist,newcameramtx,roi):
     img = cv2.undistort(img, mtx, dist, None, newcameramtx)
     x, y, w, h = roi
     img = img [y:y + h, x:x + w]
     return img
 
+
+"""Creazione della matrice contenete le immagini 
+delle case della scacchiera """
 def boxes_matrix(img,cor):
 
     #Vettore che conterrà le immagini delle case
@@ -319,6 +334,12 @@ def boxes_matrix(img,cor):
 
     return boxes
 
+"""Creazione del dataset : 
+
+Le immagini vengono catturare dalla scacchiera , 
+quindi rotate di 90 , 180 , 270 gradi per creare un
+dataset più consistente 
+"""
 def create_data_set(boxes):
 
     for i in range(0,64):
@@ -334,6 +355,8 @@ def create_data_set(boxes):
         cv2.imwrite("img180"+str(i)+".jpg",frame180)
         cv2.imwrite("img270"+str(i)+".jpg",frame270)
 
+
+"""Stampa la matrice posizionale"""
 def print_positional_matrix(matrix):
     print("MATRICE POSIZIONALE")
     for x in range(8):
@@ -341,6 +364,9 @@ def print_positional_matrix(matrix):
             print(matrix[x][y], end='  ')
         print("")
 
+
+"""Ottenimeno della mossa all'interno della modalità
+di gioco solitario ( o analisi di gioco ) """
 def get_move_single(old,new,chessboard,old_opp):
 
     matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
@@ -439,6 +465,9 @@ def get_move_single(old,new,chessboard,old_opp):
 
     return da+a
 
+
+"""Ottenimento della mossa all'interno della 
+modalità di gioco contro il computer """
 def get_move(old,new,chessboard):
 
     matrix_chessboard = [["h1","g1","f1","e1","d1","c1","b1","a1"],
@@ -527,7 +556,8 @@ def get_move(old,new,chessboard):
 
     return da+a
 
-
+"""Ritorna la matrice posizionale 
+quando tutti i pezzi sono posizionati """
 def isStart(matrix):
     if matrix==\
     [[1,1,1,1,1,1,1,1],
@@ -540,6 +570,7 @@ def isStart(matrix):
      [1,1,1,1,1,1,1,1]]: return True
     else: return False
 
+"""Ritorna la matrice posizionale vuota"""
 def isEmpty(matrix):
     if matrix==\
     [[0,0,0,0,0,0,0,0],
@@ -552,6 +583,8 @@ def isEmpty(matrix):
      [0,0,0,0,0,0,0,0]] : return True
     else: return False
 
+"""Ritorna la matrice posizionale quando i pezzi neri 
+sono posizionati nella posizione iniziale"""
 def isBlack(matrix):
         if matrix == \
                 [[0, 0, 0, 0, 0, 0, 0, 0],
@@ -566,6 +599,8 @@ def isBlack(matrix):
         else:
             return False
 
+"""Ritorna la matrice posizionale quando i pezzi bianchi 
+sono posizionati nella posizione iniziale"""
 def isWhite(matrix):
     if matrix == \
             [[1, 1, 1, 1, 1, 1, 1, 1],
@@ -580,6 +615,8 @@ def isWhite(matrix):
     else:
         return False
 
+"""Inizializzazione matrice posizionale lato bianco , 
+per il primo stato S0"""
 def setWhite():
     x = [[1, 1, 1, 1, 1, 1, 1, 1],
          [1, 1, 1, 1, 1, 1, 1, 1],
@@ -592,6 +629,8 @@ def setWhite():
 
     return x
 
+"""Inizializzazione matrice posizionale lato nero , 
+per il primo stato S0"""
 def setBlack():
     x =[[0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -604,6 +643,8 @@ def setBlack():
 
     return x
 
+
+"""Funzione per gestire la presa del pezzo bianco"""
 def whiteTake(newWhite,oldBlack):
     for x in range(8):
         for y in range(8):
@@ -612,7 +653,7 @@ def whiteTake(newWhite,oldBlack):
 
     return oldBlack
 
-
+"""Funzione per gestire la presa del pezzo nero """
 def blackTake(newBlack, oldWhite):
     for x in range(8):
         for y in range(8):
@@ -621,13 +662,15 @@ def blackTake(newBlack, oldWhite):
 
     return oldWhite
 
-
+"""Funzione per la presa al varco dal lato del bianco"""
 def whiteTakeEnpassant(oldBlack,x,y):
     oldBlack[x-1][y] = 0
 
+"""Funzione per la presa al varco dal lato del nero"""
 def blackTakeEnpassant(oldWhite,x,y):
     oldWhite[x - 1][y] = 0
 
+"""Funzione per la presa del computer ( nero ) """
 def computer_black_move(move,oldwhite):
 
     matrix_chessboard = [["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"],
@@ -666,7 +709,8 @@ def computer_black_move(move,oldwhite):
 
     return oldwhite
 
-
+"""Trasforma la stringa indicante la mossa 
+in una tupla , contente le case """
 def parse_move(move):
 
     da = move[0]+move[1]

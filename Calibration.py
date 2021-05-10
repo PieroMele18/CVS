@@ -1,8 +1,18 @@
+"""Librerie utilizzate di supporto alle funzioni cui sotto :
+- OpenCV
+- Numpy
+- Glob , che permette di gestire file presenti in una medesima
+cartella che rispecchiano il medesimo pattern ( nel nome )
+    """
+
 import cv2
 import numpy as np
-import os
 import glob
 
+
+"""Permette di normalizzare l'immagine , riducendo 
+le differenze di luce presenti all'interno della scacchiera
+e rimuovendo parzialmente il problema delle ombre """
 def normalization(image):
 
     hh, ww = image.shape[:2]
@@ -29,6 +39,10 @@ def normalization(image):
     output = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
     return output
 
+
+"""Permette di creare un set di immagini utili per la calibrazione
+della camera , all'interno della quali dovrà comparire la scacchiera per
+la calibrazione """
 def save_img_for_calibration(webcam):
 
     i = 0
@@ -48,6 +62,8 @@ def save_img_for_calibration(webcam):
             # End the program
             break
 
+"""Effettua la calibrazione della camera , restituendo una serie di 
+parametri utili per rimuovere la distorsione dall'immagine"""
 def camera_calibration():
     # Defining the dimensions of checkerboard
     CHECKERBOARD = (6, 9)
@@ -97,6 +113,8 @@ def camera_calibration():
 
     return ret, mtx, dist, rvecs, tvecs , h , w
 
+
+"""Rimuove la distorsione dalla camera """
 def undistort(img,mtx,dist,newcameramtx,roi):
     img = cv2.undistort(img, mtx, dist, None, newcameramtx)
     x, y, w, h = roi

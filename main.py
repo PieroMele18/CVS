@@ -6,14 +6,14 @@ sono presenti all'interno delle librerie da me definite :
 tra OpenCV e il sistema di scacchi
 -Calibration , per la calibrazione della camera e la creazione di set
 per la medesima funzione
-- Game_chess , contenente alcune funzioni utili per interfacciarsi con
-il motore di scacchi
+- TeachableMachine , contente la parte relativa al machine learning
 """
 # noinspection PyUnresolvedReferences
 from MyChessFunction import *
 # noinspection PyUnresolvedReferences
 from Calibration import *
-from game_chess import *
+
+from teachableMachine import *
 
 
 
@@ -294,7 +294,9 @@ class App(QWidget):
 		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
 		self.widgetSvg.load(self.chessboardSvg)
 
-
+	"""Funzione che permette di tornare al menu iniziale 
+	a partire da una schermata di gioco : vengono resettati i pulsanti 
+	presenti nella home e viene resettata la scacchiera"""
 	@pyqtSlot()
 	def back_home(self):
 
@@ -324,6 +326,9 @@ class App(QWidget):
 		self.search_chessboard.show()
 		self.home.hide()
 
+
+	"""Funzione che permette di resettare i flag per la scacchiera :
+	resettandoli riparte la ricerca della stessa """
 	@pyqtSlot()
 	def search_chessboard(self):
 
@@ -333,6 +338,8 @@ class App(QWidget):
 		boxes_found = False
 
 
+	"""Funzione che permette di iniziare la partita giocando con il 
+	lato del bianco """
 	@ pyqtSlot()
 	def play_as_white(self):
 		global chessboard
@@ -362,21 +369,15 @@ class App(QWidget):
 			self.updateChessboard(chessboard)
 
 		elif isEmpty(matrix):
-			# La scacchiera è nel suo stato iniziale
-			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("Tutorial on PyQt5")
+			self.msg.setText("This is the main text!")
+			self.msg.setIcon(QMessageBox.Question)
+			self.msg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Retry | QMessageBox.Ignore )
+			self.msg.setDefaultButton(QMessageBox.Retry)
+			self.msg.setInformativeText("informative text, ya!")
 
-			# Aggiorna pulsanti
-			self.solitario.hide()
-			self.White.hide()
-			self.Black.hide()
-			self.next_white.show()
-			self.buttonReset.show()
-			self.label.show()
-			self.findChessboard.hide()
-			self.home.show()
-
-			# Aggiorno la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.msg.setDetailedText("details")
 
 
 	@pyqtSlot()
@@ -384,7 +385,9 @@ class App(QWidget):
 		pass
 
 
-
+	"""Funzione che permette di giocare una modalità
+	solitaria o analizzare una partita in corso , 
+	salvare le mosse ..."""
 	@ pyqtSlot()
 	def on_click_solitario(self):
 
@@ -413,8 +416,16 @@ class App(QWidget):
 			self.updateChessboard(chessboard)
 
 		elif isEmpty(matrix):
-			pass
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("OPS...")
+			self.msg.setText("Inserisci i pezzi sulla scacchiera prima di cominciare.")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
 
+
+	"""Permette di resettare il gioco """
 	@pyqtSlot()
 	def on_click_reset(self):
 		global isWhiteTurn
@@ -433,7 +444,9 @@ class App(QWidget):
 		self.updateChessboard(chessboard)
 		self.label.setText("")
 
-
+	"""Permette di passare da una mossa all'altra ,
+	all'interno della modalità di gioco 
+	bianco vs cpu """
 	@pyqtSlot()
 	def on_click_next_white(self):
 		# Variabile globale da utilizzare
@@ -478,6 +491,8 @@ class App(QWidget):
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
 
+
+	"""Aggiorna le mosse all'interno del label"""
 	def on_update_moves(self,chessboard):
 
 		stack_moves = ""
@@ -489,6 +504,9 @@ class App(QWidget):
 
 		self.label.setText(stack_moves)
 
+
+	"""Permette di passare da una mossa all'altra,
+	all'interno della modalità solitario"""
 	@pyqtSlot()
 	def on_click_next(self):
 
@@ -568,22 +586,27 @@ class App(QWidget):
 			oldblack = matrix
 			return
 
-
+	"""Aggiorna la scacchiera a schermo"""
 	@pyqtSlot()
 	def updateChessboard(self,chessboard):
 		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
 		self.widgetSvg.load(self.chessboardSvg)
 
-
+	"""Funzione per aggiornare l'immagine 
+	catturata dalla webcam all'interno 
+	della finestra presente nell'interfaccia """
 	@pyqtSlot(np.ndarray)
 	def update_image(self, cv_img):
 		"""Updates the image_label with a new opencv image"""
 		qt_img = self.convert_cv_qt(cv_img)
 		self.image_label.setPixmap(qt_img)
 
+	"""Funzione per convertire l'immagine gestita 
+	tramite OpenCV in QpixMap """
 	def convert_cv_qt(self, cv_img):
-		"""Convert from an opencv image to QPixmap"""
+		#Rotazione necessaria per avere i pezzi bianchi sul proprio lato
 		cv_img = cv2.rotate(cv_img, cv2.ROTATE_180)
+		#Conversione in QImage
 		rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
 		h, w, ch = rgb_image.shape
 		bytes_per_line = ch * w
@@ -591,17 +614,27 @@ class App(QWidget):
 		return QPixmap.fromImage(p)
 
 
+
+"""Definizione della schermata di caricamento"""
 class SplashScreen(QWidget):
 	def __init__(self):
 		super().__init__()
+
+		#Impostazione finestra principale
 		self.setWindowTitle('Spash Screen')
 		self.setFixedSize(1100, 500)
+
+		#Rimozione barra titolo
 		self.setWindowFlag(Qt.FramelessWindowHint)
+
+		#Impostazione traslucenza
 		self.setAttribute(Qt.WA_TranslucentBackground)
 
+		#Contatore per il caricamento
 		self.counter = 0
-		self.n = 200 # total instance
+		self.n = 200
 
+		#Inizializzazione interfaccia
 		self.initUI()
 
 		"""Utilizzo di un thread per la gestione del video 
@@ -612,30 +645,43 @@ class SplashScreen(QWidget):
 		self.thread.change_pixmap_signal.connect(self.update_image)
 		self.thread.start()
 
+
+		#Gestione timer per il caricamento
 		self.timer = QTimer()
 		self.timer.timeout.connect(self.loading)
 		self.timer.start(30)
 
 
-
+	"""Funzione per la definizione degli elementi 
+	presenti all'interno della interfaccia 
+	della splash screen """
 	def initUI(self):
+
+		# Definizione tipologia di layout
 		layout = QVBoxLayout()
+
+		# Impostazione layout
 		self.setLayout(layout)
 
+		"""Definizione frame contenente la barra 
+		di caricamento : il nome viene utilizzato all'interno
+		di stylesheet , quindi all'interno del codice CSS """
 		self.frame = QFrame()
 		self.frame.setObjectName('FrameLoader')
 		layout.addWidget(self.frame)
 
-
+		# Definizione titolo della finestra
 		self.labelTitle = QLabel(self.frame)
 		self.labelTitle.setObjectName('LabelTitle')
 
-		# center labels
+		# Label centrale
 		self.labelTitle.resize(self.width() - 10, 150)
 		self.labelTitle.move(0, 40) # x, y
 		self.labelTitle.setText('Chess Computer Vision System')
 		self.labelTitle.setAlignment(Qt.AlignCenter)
 
+
+		# Sottotitolo : cambia durante il caricamento
 		self.labelDescription = QLabel(self.frame)
 		self.labelDescription.resize(self.width() - 10, 50)
 		self.labelDescription.move(0, self.labelTitle.height())
@@ -643,6 +689,8 @@ class SplashScreen(QWidget):
 		self.labelDescription.setText('<strong>Gestione intelligenza artificiale</strong>')
 		self.labelDescription.setAlignment(Qt.AlignCenter)
 
+
+		# ProgressBar per restituire un feedback per il caricamento
 		self.progressBar = QProgressBar(self.frame)
 		self.progressBar.resize(self.width() - 200 - 10, 50)
 		self.progressBar.move(100, self.labelDescription.y() + 130)
@@ -652,6 +700,8 @@ class SplashScreen(QWidget):
 		self.progressBar.setRange(0, self.n)
 		self.progressBar.setValue(20)
 
+
+		# Scritta che indica il processo in corso
 		self.labelLoading = QLabel(self.frame)
 		self.labelLoading.resize(self.width() - 10, 50)
 		self.labelLoading.move(0, self.progressBar.y() + 70)
@@ -659,6 +709,11 @@ class SplashScreen(QWidget):
 		self.labelLoading.setAlignment(Qt.AlignCenter)
 		self.labelLoading.setText('caricamento...')
 
+
+
+	"""Come sopra , la gestione del thread è stata spostata 
+	all'interno della splash screen , in modo tale da poter 
+	caricare i contenuti necessari durante il caricamento """
 	@pyqtSlot(np.ndarray)
 	def update_image(self, cv_img):
 		"""Updates the image_label with a new opencv image"""
@@ -680,6 +735,9 @@ class SplashScreen(QWidget):
 			self.thread.stop()
 			event.accept()
 
+	"""Funzione per l'aggiornamento della barra 
+	di caricamento e i vari sottotitoli indicanti 
+	il processo in corso """
 	def loading(self):
 
 		self.progressBar.setValue(self.counter)
@@ -698,6 +756,8 @@ class SplashScreen(QWidget):
 
 		self.counter += 1
 
+
+"""Main dell'applicazione"""
 if __name__=="__main__":
 	app = QApplication(sys.argv)
 	app.setStyleSheet('''
@@ -770,8 +830,17 @@ if __name__=="__main__":
 				border : 3px gray;
 			}
 			
+			QMessageBox{
+				background-color: #2f4455;
+				color:#ffffff;
+				border : 2px solid black ; 
+				border-radius: 10px;
+				text-align: center;
+				font-size: 15px;
+				font-family:Arial;
+			}
+			
 		''')
-
 	splash = SplashScreen()
 	splash.show()
 
