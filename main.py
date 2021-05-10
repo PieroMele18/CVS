@@ -24,6 +24,7 @@ Librerie esterne in uso all'interno del programma :
 """
 import chess
 import chess.engine
+import chess.svg
 from stockfish import Stockfish
 
 """Tutte le librerie cui sotto sono state utilizzate per la
@@ -153,7 +154,10 @@ class VideoThread(QThread):
 						coordinates = get_final_coordinates(box_corners)
 
 				# Salvataggio immagine per il thread
-				self.change_pixmap_signal.emit(img_chessboard)
+
+				if(chessboard_found and boxes_found):
+					self.change_pixmap_signal.emit(img_chessboard)
+
 
 		# Rilascio risorse allocate al termine delle operazioni
 		webcam.release()
@@ -192,7 +196,7 @@ class App(QWidget):
 		"""Contorno per l'immagine della webcam nella home"""
 		self.backgroundweb = QLabel(self)
 		self.backgroundweb.setGeometry(40,30,400,400)
-		img_back = QPixmap("weback.png")
+		img_back = QPixmap("whiteback.png")
 		img_back = img_back.scaled(400,400)
 		self.backgroundweb.setPixmap(img_back)
 
@@ -267,6 +271,13 @@ class App(QWidget):
 		self.next_white.clicked.connect(self.on_click_next_white)
 		self.next_white.hide()
 
+		"""Pulsante per confermare l'esecuzione della mossa,
+		utilizzato nella modalità di gioco Bianco Vs Cpu"""
+		self.next_black = QPushButton('Prossima mossa', self)
+		self.next_black.setGeometry(600, 70, 200, 40)
+		self.next_black.clicked.connect(self.on_click_next_black)
+		self.next_black.hide()
+
 		"""Pulsante per effettuare il reset della scacchiera
 		e dello stato di gioco (Ad esempio quando si vuole 
 		 iniziare una nuova partita) """
@@ -276,9 +287,9 @@ class App(QWidget):
 		self.buttonReset.hide()
 
 
-		self.home = QPushButton("Torna alla home")
+		self.home = QPushButton("Torna alla home",self)
 		self.home.setGeometry(600, 220, 200, 40)
-		self.home.clicked.connect(self.on_click_reset)
+		self.home.clicked.connect(self.back_home)
 		self.home.hide()
 
 
@@ -316,6 +327,10 @@ class App(QWidget):
 		self.updateChessboard(chessboard)
 		self.label.setText("")
 
+		img_back = QPixmap("whiteback.png")
+		img_back = img_back.scaled(400, 400)
+		self.backgroundweb.setPixmap(img_back)
+
 		# Aggiorna pulsanti
 		self.solitario.show()
 		self.White.show()
@@ -323,8 +338,10 @@ class App(QWidget):
 		self.next_white.hide()
 		self.buttonReset.hide()
 		self.label.hide()
-		self.search_chessboard.show()
+		self.next_black.hide()
+		self.findChessboard.show()
 		self.home.hide()
+
 
 
 	"""Funzione che permette di resettare i flag per la scacchiera :
@@ -370,19 +387,57 @@ class App(QWidget):
 
 		elif isEmpty(matrix):
 			self.msg = QMessageBox()
-			self.msg.setWindowTitle("Tutorial on PyQt5")
-			self.msg.setText("This is the main text!")
-			self.msg.setIcon(QMessageBox.Question)
-			self.msg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Retry | QMessageBox.Ignore )
-			self.msg.setDefaultButton(QMessageBox.Retry)
-			self.msg.setInformativeText("informative text, ya!")
-
-			self.msg.setDetailedText("details")
+			self.msg.setWindowTitle("OPS...")
+			self.msg.setText("Inserisci i pezzi sulla scacchiera prima di cominciare.")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
 
 
 	@pyqtSlot()
 	def play_as_black(self):
-		pass
+
+		"""Modifica della scacchiera ,
+		posizionata al contrario, in modo tale da
+		 favorire la scacchiera rispeotto all'utente"""
+		img_back = QPixmap("blackback.png")
+		img_back = img_back.scaled(400, 400)
+		self.backgroundweb.setPixmap(img_back)
+
+		# Estrazione delle case della matrice
+		if boxes_found:
+			boxes = boxes_matrix(img_chessboard, coordinates)
+
+		# Creazione matrice posizionale
+		matrix = find_pieces(boxes, "all")
+
+		if isEmpty(matrix):
+			# La scacchiera è nel suo stato iniziale
+			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+			# Aggiorna pulsanti
+			self.solitario.hide()
+			self.White.hide()
+			self.Black.hide()
+			self.next_black.show()
+			self.buttonReset.show()
+			self.label.show()
+			self.findChessboard.hide()
+			self.home.show()
+
+
+			# Aggiorno la scacchiera a schermo
+			self.updateChessboard(chessboard)
+
+		elif isEmpty(matrix):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("OPS...")
+			self.msg.setText("Inserisci i pezzi sulla scacchiera prima di cominciare.")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
 
 
 	"""Funzione che permette di giocare una modalità
@@ -491,6 +546,9 @@ class App(QWidget):
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
 
+
+	def on_click_next_black(self):
+		pass
 
 	"""Aggiorna le mosse all'interno del label"""
 	def on_update_moves(self,chessboard):
