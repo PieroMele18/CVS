@@ -186,10 +186,19 @@ class App(QWidget):
 
 		"""Inserimento di un logo per riempire la interfacia"""
 		self.logo = QLabel(self)
-		self.logo.setGeometry(640, 130, 512, 512)
+		self.logo.setGeometry(640,320,120,120)
 		icon = QPixmap("horse.png")
 		icon = icon.scaled(120, 120)
 		self.logo.setPixmap(icon)
+
+
+		self.feedback = QLabel(self)
+		self.feedback.setGeometry(600,480,200,40)
+		self.feedback.setText("Caricamento in corso")
+		self.feedback.setStyleSheet("""font-family:Arial;
+				font-size:20px; color:#ffffff; font-weight:bold; """)
+		self.feedback.setAlignment(Qt.AlignCenter)
+		self.feedback.hide()
 
 		"""Contorno per l'immagine della webcam nella home"""
 		self.backgroundweb = QLabel(self)
@@ -331,6 +340,8 @@ class App(QWidget):
 		self.findChessboard.setGeometry(600, 250, 200, 40)
 		self.findChessboard.clicked.connect(self.search_chessboard)
 
+
+		"""Combo box per la scelta del livello"""
 		self.slider = QComboBox(self)
 		self.slider.setGeometry(600, 170, 200, 40)
 		self.slider.addItem("Difficoltà")
