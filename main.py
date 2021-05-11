@@ -377,6 +377,9 @@ class App(QWidget):
 		img_back = img_back.scaled(400, 400)
 		self.backgroundweb.setPixmap(img_back)
 
+		self.chessboardSvg = chess.svg.board(chessboard,orientation=chess.WHITE).encode("UTF-8")
+		self.widgetSvg.load(self.chessboardSvg)
+
 		# Aggiorna pulsanti
 		self.solitario.show()
 		self.White.show()
@@ -429,6 +432,7 @@ class App(QWidget):
 			self.label.show()
 			self.findChessboard.hide()
 			self.home.show()
+			self.slider.hide()
 
 			# Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -464,6 +468,9 @@ class App(QWidget):
 		img_back = img_back.scaled(400, 400)
 		self.backgroundweb.setPixmap(img_back)
 
+		self.chessboardSvg = chess.svg.board(chessboard,orientation=chess.BLACK).encode("UTF-8")
+		self.widgetSvg.load(self.chessboardSvg)
+
 		# Aggiorna pulsanti
 		self.solitario.hide()
 		self.White.hide()
@@ -477,7 +484,11 @@ class App(QWidget):
 	@pyqtSlot()
 	def play_as_black(self):
 
+		global chessboard
+
 		self.setLevel()
+
+
 
 		# Estrazione delle case della matrice
 		if boxes_found:
@@ -486,7 +497,7 @@ class App(QWidget):
 		# Creazione matrice posizionale
 		matrix = find_pieces(boxes, "all")
 
-		if isEmpty(matrix):
+		if isStart(matrix):
 			# La scacchiera è nel suo stato iniziale
 			chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
@@ -501,7 +512,18 @@ class App(QWidget):
 			self.home.show()
 			self.slider.hide()
 
-			# Aggiorno la scacchiera a schermo
+
+			"""Prima mossa spetta al computer """
+			fen = chessboard.fen()
+			stockfish.set_fen_position(fen)
+
+			best_move = stockfish.get_best_move()
+			chessboard.push_uci(best_move)
+
+			# Aggiorna mosse
+			self.on_update_moves(chessboard)
+
+			# Aggiorna la scacchiera a schermo
 			self.updateChessboard(chessboard)
 
 		elif isEmpty(matrix):
@@ -618,37 +640,23 @@ class App(QWidget):
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
 
+	@pyqtSlot()
 	def on_click_next_black(self):
 		# Variabile globale da utilizzare
 		global oldblack
-		global isWhiteTurn
-
-		if(isWhiteTurn):
-			"""Prima mossa spetta al computer """
-			fen = chessboard.fen()
-			stockfish.set_fen_position(fen)
-
-			best_move = stockfish.get_best_move()
-			chessboard.push_uci(best_move)
-
-
-			# Aggiorna mosse
-			self.on_update_moves(chessboard)
-
-			# Aggiorna la scacchiera a schermo
-			self.updateChessboard(chessboard)
-
-			isWhiteTurn = False ;
-
-			return
 
 		# Estrazione delle case della matrice
 		if boxes_found:
 			boxes = boxes_matrix(img_chessboard, coordinates)
 
 		# Estrazione matrice posizionale bianca
-		matrix = find_pieces(boxes, "white")
-		# Elaborazione mossa del bianco
+		matrix = find_pieces(boxes, "black")
+
+		matrix = rotate_matrix(matrix)
+
+		print_positional_matrix(matrix)
+
+		# Elaborazione mossa del nero
 		try:
 			move = get_move(oldblack, matrix, chessboard)
 			chessboard.push_uci(move)
@@ -666,7 +674,7 @@ class App(QWidget):
 		# Sovrascrivere variabile dello stato precedente con il nuovo stato
 		oldblack = matrix
 
-		"""Prima mossa spetta al computer """
+
 		fen = chessboard.fen()
 		stockfish.set_fen_position(fen)
 
@@ -681,6 +689,7 @@ class App(QWidget):
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
+
 
 	"""Aggiorna le mosse all'interno del label"""
 

@@ -758,3 +758,14 @@ def parse_move(move):
     a = move[2]+move[3]
 
     return da,a
+
+
+def rotate_matrix(matrix):
+    matrix  = matrix[::-1]
+    result = [[0 for x in range(8)] for y in range(8)]
+
+    for i in range(8):
+        for j in range(8):
+            result[i][j] = matrix[i][7 - j]
+
+    return result
