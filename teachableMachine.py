@@ -14,13 +14,16 @@ def set_model():
 # Create the array of the right shape to feed into the keras model
 # The 'length' or number of images you can put into the array is
 # determined by the first position in the shape tuple, in this case 1.
-data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+data = np.ndarray(shape=(64, 224, 224, 3), dtype=np.float32)
+
 
 def find_pieces(boxes , str ):
 
     positional_matrix = [[ 0 for x in range(8)] for y in range(8)]
-    x = 0
-    y = 0
+
+    i = 0
+
+
     for box in boxes:
 
         size = (224, 224)
@@ -35,57 +38,51 @@ def find_pieces(boxes , str ):
         # Immagine convertita in array
         image_array = np.asarray(image)
 
-
         # Normalizzazione
         normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
 
         # Load the image into the array
-        data[0] = normalized_image_array
+        data[i] = normalized_image_array
 
-        # run the inference
-        prediction = model.predict(data)
+        i = i +1
 
-        if str == "all" :
-            # Ricerca tutti i pezzi posizionati sulla scacchiera
-            positional_matrix[y][x] = get_prediction(prediction)
-        elif str == "white" :
-            #Ricerca solo i pezzi bianchi posizionati sulla scacchiera
-            positional_matrix[y][x] = get_white_prediction(prediction)
-        elif str == "black" :
-            #Ricerca solo i pezzi neri posizionati sulla scacchiera
-            positional_matrix[y][x] = get_black_prediction(prediction)
+    # run the inference
+    prediction = model.predict(data)
 
 
-        #Gestione un pò caotica per l'inserimento degli elementi nella matrice
-        x,y = set_index(x,y)
+    i = 0
 
-        #Chiusura del ciclo
-        if y == 8 : break
+    for x in range(8):
+        for y in range(8):
+
+            if str == "all" :
+                # Ricerca tutti i pezzi posizionati sulla scacchiera
+                positional_matrix[x][y] = get_prediction(prediction,i)
+            elif str == "white" :
+                #Ricerca solo i pezzi bianchi posizionati sulla scacchiera
+                positional_matrix[x][y] = get_white_prediction(prediction,i)
+            elif str == "black" :
+                #Ricerca solo i pezzi neri posizionati sulla scacchiera
+                positional_matrix[x][y] = get_black_prediction(prediction,i)
+
+            i = i + 1
+
 
     print_positional_matrix(positional_matrix)
     return positional_matrix
 
-def get_prediction(prediction):
-    if (prediction[0][0] < prediction[0][1]) or (prediction[0][0] < prediction[0][2]):
+def get_prediction(prediction,i):
+    if (prediction[i][0] < prediction[i][1]) or (prediction[i][0] < prediction[i][2]):
         return 1
     else : return 0
 
-def get_black_prediction(prediction):
-    if (prediction[0][1] > prediction [0][0]) and (prediction[0][1] > prediction [0][2]) :
+def get_black_prediction(prediction,i):
+    if (prediction[i][1] > prediction [i][0]) and (prediction[i][1] > prediction [i][2]) :
         return 1
     else : return  0
 
-def get_white_prediction(prediction):
-    if (prediction[0][2] > prediction [0][0]) and (prediction[0][2] > prediction [0][1]) :
+def get_white_prediction(prediction,i):
+    if (prediction[i][2] > prediction [i][0]) and (prediction[i][2] > prediction [i][1]) :
         return 1
     else : return  0
 
-def set_index(x,y):
-    if x == 7 :
-        x = 0
-        y = y + 1
-        return x,y
-
-    x = x + 1
-
-    return x,y
