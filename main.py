@@ -36,6 +36,8 @@ from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushBut
 	QMenu, QAction, QFrame, QProgressBar, QSlider, QComboBox
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread, QTimer, QPropertyAnimation
+
+import time
 import sys
 
 """Classe per la gestione della visione artificiale e per
@@ -191,14 +193,6 @@ class App(QWidget):
 		icon = icon.scaled(120, 120)
 		self.logo.setPixmap(icon)
 
-
-		self.feedback = QLabel(self)
-		self.feedback.setGeometry(600,480,200,40)
-		self.feedback.setText("Caricamento in corso")
-		self.feedback.setStyleSheet("""font-family:Arial;
-				font-size:20px; color:#ffffff; font-weight:bold; """)
-		self.feedback.setAlignment(Qt.AlignCenter)
-		self.feedback.hide()
 
 		"""Contorno per l'immagine della webcam nella home"""
 		self.backgroundweb = QLabel(self)
@@ -414,13 +408,15 @@ class App(QWidget):
 		chessboard_found = False
 		boxes_found = False
 
+
+
+
 	"""Funzione che permette di iniziare la partita giocando con il 
 	lato del bianco """
 
 	@pyqtSlot()
 	def play_as_white(self):
 		global chessboard
-
 		self.setLevel()
 
 		# Estrazione delle case della matrice
@@ -626,12 +622,25 @@ class App(QWidget):
 			move = get_move(oldwhite, matrix, chessboard)
 			chessboard.push_uci(move)
 		except:
-			print("Mossa non valida")
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("ATTENZIONE!")
+			self.msg.setText("Mossa non valida")
+			self.msg.setIcon(QMessageBox.Warning)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
 			return
 
 		# Vittoria per il bianco
 		if (chessboard.is_checkmate()):
-			print("Il bianco ha vinto!")
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("CONGRATULAZIONI ! ")
+			self.msg.setText("Hai vinto la partita")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
@@ -650,6 +659,17 @@ class App(QWidget):
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
+
+		# Vittoria per il nero
+		if (chessboard.is_checkmate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("HAI PERSO !")
+			self.msg.setText("Il computer ti ha battuto")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
 
 	@pyqtSlot()
 	def on_click_next_black(self):
@@ -672,18 +692,33 @@ class App(QWidget):
 			move = get_move(oldblack, matrix, chessboard)
 			chessboard.push_uci(move)
 		except:
-			print("Mossa non valida")
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("ATTENZIONE!")
+			self.msg.setText("Mossa non valida")
+			self.msg.setIcon(QMessageBox.Warning)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
 			return
 
-		# Vittoria per il bianco
-		if (chessboard.is_checkmate()):
-			print("Il bianco ha vinto!")
+
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
-
 		# Sovrascrivere variabile dello stato precedente con il nuovo stato
 		oldblack = matrix
+
+		# Vittoria per il nero
+		if (chessboard.is_checkmate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("CONGRATULAZIONI ! ")
+			self.msg.setText("Hai vinto la partita")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
+
 
 
 		fen = chessboard.fen()
@@ -701,6 +736,17 @@ class App(QWidget):
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
 
+
+		# Vittoria per il bianco
+		if (chessboard.is_checkmate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("HAI PERSO !")
+			self.msg.setText("Il computer ti ha battuto")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
 
 	"""Aggiorna le mosse all'interno del label"""
 
@@ -754,7 +800,13 @@ class App(QWidget):
 				move = get_move_single(oldwhite, matrix, chessboard, oldblack)
 				chessboard.push_uci(move)
 			except:
-				print("Mossa non valida")
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("ATTENZIONE!")
+				self.msg.setText("Mossa non valida")
+				self.msg.setIcon(QMessageBox.Warning)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
 				return
 
 			# Gestione pedone mangiato
@@ -762,7 +814,15 @@ class App(QWidget):
 
 			# Vittoria per il bianco
 			if (chessboard.is_checkmate()):
-				print("Il bianco ha vinto!")
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("CONGRATULAZIONI ! ")
+				self.msg.setText("Il giocatore bianco ha vinto la partita")
+				self.msg.setIcon(QMessageBox.Information)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
+
+
 
 			self.on_update_moves(chessboard)
 
@@ -785,7 +845,13 @@ class App(QWidget):
 				move = get_move_single(oldblack, matrix, chessboard, oldwhite)
 				chessboard.push_uci(move)
 			except:
-				print("Mossa non valida")
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("ATTENZIONE!")
+				self.msg.setText("Mossa non valida")
+				self.msg.setIcon(QMessageBox.Warning)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
 				return
 
 			# Gestione pedone mangiato
@@ -793,7 +859,16 @@ class App(QWidget):
 
 			# Vittoria per il bianco
 			if (chessboard.is_checkmate()):
-				print("Il nero ha vinto!")
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("CONGRATULAZIONI ! ")
+				self.msg.setText("Il giocatore nero ha vinto la partita")
+				self.msg.setIcon(QMessageBox.Information)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
+
+
+
 
 			self.on_update_moves(chessboard)
 
