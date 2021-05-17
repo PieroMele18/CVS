@@ -356,6 +356,164 @@ def create_data_set(boxes):
         cv2.imwrite("img270"+str(i)+".jpg",frame270)
 
 
+
+def create_chessboard_set(boxes,flag):
+
+    if(flag == 0):
+        for i in range(0,16):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\C-White\piece" +str(flag)+str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\C-White\piece90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\C-White\piece180" +str(flag) +str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\C-White\piece270" + str(flag)+str(i) + ".jpg", frame270)
+
+        for i in range(16,48):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(48,64):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\B-Black\piece" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\B-Black\piece90" +str(flag)+ str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\B-Black\piece180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\B-Black\piece270" +str(flag)+ str(i) + ".jpg", frame270)
+
+    if(flag == 1):
+        for i in range(0,8):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\C-White\piece" +str(flag)+str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\C-White\piece90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\C-White\piece180" +str(flag) +str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\C-White\piece270" + str(flag)+str(i) + ".jpg", frame270)
+
+        for i in range(8,16):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(16,24):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\C-White\piece" +str(flag)+str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\C-White\piece90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\C-White\piece180" +str(flag) +str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\C-White\piece270" + str(flag)+str(i) + ".jpg", frame270)
+
+        for i in range(24,40):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(40, 48):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\B-Black\piece" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\B-Black\piece90" +str(flag)+ str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\B-Black\piece180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\B-Black\piece270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(48, 56):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(56, 64):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\B-Black\piece" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\B-Black\piece90" +str(flag)+ str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\B-Black\piece180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\B-Black\piece270" +str(flag)+ str(i) + ".jpg", frame270)
+
+    if(flag == 2):
+
+        for i in range(0,8):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(8,24):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\C-White\piece" +str(flag)+str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\C-White\piece90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\C-White\piece180" +str(flag) +str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\C-White\piece270" + str(flag)+str(i) + ".jpg", frame270)
+
+        for i in range(24,40):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" +str(flag)+ str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(40,56):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\B-Black\piece" +str(flag)+ str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\B-Black\piece90" + str(flag)+str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\B-Black\piece180" +str(flag)+str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\B-Black\piece270" +str(flag)+ str(i) + ".jpg", frame270)
+
+        for i in range(56, 64):
+            frame = boxes[i][24:104, 24:104]  # Estrazione Roi
+            frame90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Giro l'immagine di 90 gradi
+            frame180 = cv2.rotate(frame, cv2.ROTATE_180)  # Giro l'immagine di 180 gradi
+            frame270 = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Giro l'immagine di 270 gradi
+            cv2.imwrite("new_chessboard\A-Empty\empty" + str(flag) + str(i) + ".jpg", frame)
+            cv2.imwrite("new_chessboard\A-Empty\empty90" + str(flag) + str(i) + ".jpg", frame90)
+            cv2.imwrite("new_chessboard\A-Empty\empty180" + str(flag) + str(i) + ".jpg", frame180)
+            cv2.imwrite("new_chessboard\A-Empty\empty270" + str(flag) + str(i) + ".jpg", frame270)
+
+
 """Stampa la matrice posizionale"""
 def print_positional_matrix(matrix):
     print("MATRICE POSIZIONALE")

@@ -78,8 +78,9 @@ oldwhite = setWhite()
 chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
 # Motore Stockfish , per la scelta delle mosse migliori e per la gestione delle partite vs CPU
 stockfish = Stockfish("stockfish-10-win\Windows\stockfish_10_x64")
-
-
+# Flag da utilizzare nella procedura per la creazione della scacchiera
+step = 0
+#Flag che indica se il programma sta caricando
 isLoading = True
 
 """Classe che estende un Thread per l'utilizzo della schermata
@@ -325,28 +326,47 @@ class App(QWidget):
 		"""Pulsante per rientrare al menu principale a partire
 		dalle altre schermata di gioco """
 		self.home = QPushButton("Torna alla home", self)
-		self.home.setGeometry(600, 220, 200, 40)
+		self.home.setGeometry(600, 170, 200, 40)
 		self.home.clicked.connect(self.back_home)
 		self.home.hide()
 
 		"""Pulsante per effettuare la ricerca della scacchiera"""
 		self.findChessboard = QPushButton('Ricerca Scacchiera', self)
-		self.findChessboard.setGeometry(600, 250, 200, 40)
+		self.findChessboard.setGeometry(600, 70, 200, 40)
 		self.findChessboard.clicked.connect(self.search_chessboard)
-
+		self.findChessboard.hide()
 
 		"""Combo box per la scelta del livello"""
 		self.slider = QComboBox(self)
-		self.slider.setGeometry(600, 170, 200, 40)
+		self.slider.setGeometry(600, 120, 200, 40)
 		self.slider.addItem("Difficoltà")
 		self.slider.addItem("Principiante")
 		self.slider.addItem("Esperto")
 		self.slider.addItem("Maestro")
 		self.slider.addItem("Gran Maestro")
 		self.slider.hide()
-
 		self.slider.setCurrentIndex(0)
 		self.slider.setToolTip('Seleziona il livello')
+
+
+
+		"""Pulsante per le impostazioni della scacchiera """
+		self.setting = QPushButton("Impostazioni ", self)
+		self.setting.setGeometry(600, 250, 200, 40)
+		self.setting.clicked.connect(self.open_settings)
+
+		"""Pulsante per wizard creazione set scacchiera"""
+		self.wizard = QPushButton("Aggiungi scacchiera", self)
+		self.wizard.setGeometry(600, 120, 200, 40)
+		self.wizard.clicked.connect(self.start_wizard)
+		self.wizard.hide()
+
+		"""Pulsante per procedere nel wizard"""
+		self.next_wizard = QPushButton("Successivo", self)
+		self.next_wizard.setGeometry(600, 70, 200, 40)
+		self.next_wizard.clicked.connect(self.next_wizard_action)
+		self.next_wizard.hide()
+
 
 		"""Codifica della scacchiera formato svg per la lettura 
 		e scrittura all'interno della finestra preposta """
@@ -393,9 +413,72 @@ class App(QWidget):
 		self.buttonReset.hide()
 		self.label.hide()
 		self.next_black.hide()
-		self.findChessboard.show()
 		self.home.hide()
 		self.slider.hide()
+		self.setting.show()
+		self.findChessboard.hide()
+
+	"""Mostra le impostazioni """
+	@pyqtSlot()
+	def open_settings(self):
+		self.findChessboard.show()
+		self.solitario.hide()
+		self.White.hide()
+		self.Black.hide()
+		self.home.show()
+		self.setting.hide()
+		self.wizard.show()
+
+
+	@pyqtSlot()
+	def start_wizard(self):
+		self.label.show()
+		self.wizard.hide()
+		self.home.hide()
+		self.findChessboard.hide()
+		self.next_wizard.show()
+		self.label.setText("Inserisci i pezzi sulla scacchiera , cosi come sono indicati all"
+						   "interno dell'immagine qui sopra , quindi clicca sul pulsante "
+						   "'Successivo'.")
+
+		chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		self.chessboardSvg = chess.svg.board(chessboard,orientation=chess.WHITE).encode("UTF-8")
+		self.widgetSvg.load(self.chessboardSvg)
+
+	@pyqtSlot()
+	def next_wizard_action(self):
+		global step
+
+
+		if(step == 0 ):
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
+
+			"""Prossimo schema per i pezzi sulla scacchiera"""
+			chessboard = chess.Board("rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBQKBNR w - - 0 1")
+			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
+			self.widgetSvg.load(self.chessboardSvg)
+
+
+		if(step == 1):
+			"""Prossimo schema per i pezzi sulla scacchiera"""
+			chessboard = chess.Board("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1")
+			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
+			self.widgetSvg.load(self.chessboardSvg)
+
+
+
+		if(step == 2 ):
+			"""Prossimo schema per i pezzi sulla scacchiera"""
+			chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
+			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
+			self.widgetSvg.load(self.chessboardSvg)
+			step = 0
+			return
+
+
+		step = step + 1
+
 
 	"""Funzione che permette di resettare i flag per la scacchiera :
 	resettandoli riparte la ricerca della stessa """
@@ -464,6 +547,7 @@ class App(QWidget):
 		self.findChessboard.hide()
 		self.home.show()
 		self.slider.show()
+		self.setting.hide()
 
 	@pyqtSlot()
 	def start_as_black(self):
@@ -487,6 +571,7 @@ class App(QWidget):
 		self.findChessboard.hide()
 		self.home.show()
 		self.slider.show()
+		self.setting.hide()
 
 	@pyqtSlot()
 	def play_as_black(self):
@@ -641,6 +726,8 @@ class App(QWidget):
 			self.msg.setWindowFlag(Qt.FramelessWindowHint)
 			self.msg.show()
 			return
+
+	
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
