@@ -461,6 +461,8 @@ class App(QWidget):
 
 
 		if(step == 1):
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1")
 			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
@@ -469,6 +471,8 @@ class App(QWidget):
 
 
 		if(step == 2 ):
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
 			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
