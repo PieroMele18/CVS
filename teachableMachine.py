@@ -1,4 +1,6 @@
 import tensorflow.keras
+import tensorflow as tf
+
 from PIL import Image, ImageOps
 from MyChessFunction import *
 
@@ -42,18 +44,16 @@ def find_pieces(boxes , str ):
         # Immagine convertita in array
         image_array = np.asarray(image)
 
-        # Normalizzazione
-        normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
 
         # Load the image into the array
-        data[i] = normalized_image_array
+        data[i] = image_array
 
         i = i +1
 
     # run the inference
     prediction = model.predict(data)
-
-
+    predicted_categories = tf.argmax(prediction, axis=1)
+    print(predicted_categories)
     i = 0
 
     for x in range(8):

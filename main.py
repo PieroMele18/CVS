@@ -628,6 +628,9 @@ class App(QWidget):
 		self.home.hide()
 		self.findChessboard.hide()
 		self.next_wizard.show()
+		self.radioPersonal.hide()
+		self.radioDefault.hide()
+		self.radio_label.hide()
 		self.label.setText("Inserisci i pezzi sulla scacchiera , cosi come sono indicati all"
 						   "interno dell'immagine qui sopra , quindi clicca sul pulsante "
 						   "'Successivo'.")
