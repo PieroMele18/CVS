@@ -7,14 +7,18 @@ np.set_printoptions(suppress=True)
 
 model = None
 
-def set_model():
+def set_model(flag):
     global model
-    model = tensorflow.keras.models.load_model('keras_model.h5')
+
+    if(flag == 0 ):
+        model = tensorflow.keras.models.load_model('keras_model.h5')
+    elif(flag == 1 ) :
+        model = tensorflow.keras.models.load_model('my_keras.h5')
 
 # Create the array of the right shape to feed into the keras model
 # The 'length' or number of images you can put into the array is
 # determined by the first position in the shape tuple, in this case 1.
-data = np.ndarray(shape=(64, 224, 224, 3), dtype=np.float32)
+data = np.ndarray(shape=(64, 56, 56, 3), dtype=np.float32)
 
 
 def find_pieces(boxes , str ):
@@ -26,7 +30,7 @@ def find_pieces(boxes , str ):
 
     for box in boxes:
 
-        size = (224, 224)
+        size = (56, 56)
 
         # Conversione da OpenCV a PIL
         box = cv2.cvtColor(box, cv2.COLOR_BGR2RGB)

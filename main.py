@@ -33,12 +33,18 @@ SVG , formato nel quale la scacchiera viene codificata"""
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushButton, QMessageBox, QToolTip, QMenuBar, \
-	QMenu, QAction, QFrame, QProgressBar, QSlider, QComboBox
+	QMenu, QAction, QFrame, QProgressBar, QSlider, QComboBox, QRadioButton, QGridLayout, QGroupBox, QHBoxLayout
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread, QTimer, QPropertyAnimation
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread, QTimer, QPropertyAnimation, QRect
 
 import time
 import sys
+
+from pathlib import Path
+Path("new_chessboard/A-Empty").mkdir(parents=True, exist_ok=True)
+Path("new_chessboard/B-Black").mkdir(parents=True, exist_ok=True)
+Path("new_chessboard/C-White").mkdir(parents=True, exist_ok=True)
+
 
 """Classe per la gestione della visione artificiale e per
 la elaborazione delle immagini """
@@ -51,6 +57,17 @@ import numpy as np
 
 """Utilizzato per la gestione della Splash Screen"""
 from datetime import time
+
+"""Importazione pacchetti utili :
+-Tensorflow
+-Keras
+"""
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+"""Per gestire le immagini presenti nelle cartelle"""
+import pathlib
 
 """Variabili utili per il corretto funzionamento del programma :
 per lo più flag , ma anche variabili globali che ho usato all'interno 
@@ -82,6 +99,137 @@ stockfish = Stockfish("stockfish-10-win\Windows\stockfish_10_x64")
 step = 0
 #Flag che indica se il programma sta caricando
 isLoading = True
+#Per la creazione di un modello , per la barra di caricamento
+refApp = None
+#Variabile che indica il numero di epoche per la creazione del modello
+epochs = 50
+#Flag che indica se si sta utilizzando la scacchiera di default o meno
+chessboard_type = 0
+#Flag che indica se è stato creato un modello personale
+isAvailable = False
+
+"""Thread per la creazione del modello"""
+class TaskThread(QThread):
+	taskFinished = pyqtSignal()
+
+	# Costruttore della classe
+	def __init__(self):
+		super().__init__()
+		self._run_flag = True
+
+	def run(self):
+		while self._run_flag:
+			# TEST DIFFERENT MACHINE LEARNING MODEL
+
+			data_dir = pathlib.Path("new_chessboard")
+
+			image_count = len(list(data_dir.glob('*/*.jpg')))
+
+			print("Il dataset è costituito da " + str(image_count) + " immagini.")
+
+			"""Parametri per keras """
+
+			batch_size = 16
+			width = 56
+			height = 56
+
+
+			"""Training"""
+			train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+				data_dir,
+				validation_split=0.2,
+				subset="training",
+				seed=123,
+				image_size=(height, width),
+				batch_size=batch_size)
+
+			"""Validation"""
+			val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+				data_dir,
+				validation_split=0.2,
+				subset="validation",
+				seed=123,
+				image_size=(height, width),
+				batch_size=batch_size)
+
+
+			"""Data augmentation"""
+
+			data_augmentation = keras.Sequential(
+				[
+					layers.experimental.preprocessing.RandomFlip("horizontal",
+																 input_shape=(height,
+																			  width,
+																			  3)),
+					layers.experimental.preprocessing.RandomRotation(0.1),
+					layers.experimental.preprocessing.RandomZoom(0.1),
+				]
+			)
+
+			####################################################################
+
+			"""Configurazione dei dati per migliorarne le prestazioni """
+
+			train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+			val_ds = val_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+
+			"""Allenamento del modello predittivo"""
+			"""
+			model = tf.keras.applications.VGG16(
+				include_top=True, weights='imagenet', input_tensor=None,
+				input_shape=None, pooling=None, classes=1000,
+				classifier_activation='softmax'
+			)
+			"""
+			model = tf.keras.Sequential([
+				layers.experimental.preprocessing.Rescaling(1. / 255),
+				data_augmentation,
+				layers.Conv2D(32, 3, activation='relu'),
+				layers.MaxPooling2D(),
+				layers.Conv2D(32, 3, activation='relu'),
+				layers.MaxPooling2D(),
+				layers.Conv2D(32, 3, activation='relu'),
+				layers.MaxPooling2D(),
+				layers.Flatten(),
+				layers.Dense(128, activation='relu'),
+				layers.Dense(3)
+			])
+
+			model.compile(
+				optimizer='adam',
+				loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True),
+				metrics=['accuracy'])
+
+			global epochs
+
+			history = model.fit(
+				train_ds,
+				validation_data=val_ds,
+				epochs=epochs,
+				verbose=0,
+				callbacks=[CustomCallback()]
+			)
+
+
+
+			model.save("my_keras.h5")
+
+			self._run_flag = False
+			self.taskFinished.emit()
+
+	# Quando il programma viene terminato
+	def stop(self):
+		self._run_flag = False
+		self.wait()
+
+"""Callback per ottenere l'epoca all'interno 
+del processo che porta alla creazione del modello"""
+class CustomCallback(keras.callbacks.Callback):
+	def on_epoch_end(self, epoch, logs=None):
+		global refApp
+		global epochs
+		refApp.progressBar.setValue(100/epochs*(epoch+1))
+
 
 """Classe che estende un Thread per l'utilizzo della schermata
 della webcam , che riprende la scacchiera , all'interno 
@@ -102,7 +250,7 @@ class VideoThread(QThread):
 	# Corpo del thread
 	def run(self):
 
-		set_model()
+		set_model(0)
 
 		# Gestione webcam
 		webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -176,6 +324,7 @@ class App(QWidget):
 		super().__init__()
 
 		global isLoading
+		global isAvailable
 		isLoading = False
 
 		"""Definizione della dimensione della finestra principale
@@ -251,35 +400,7 @@ class App(QWidget):
 		self.label.setWordWrap(True)
 		self.label.hide()
 
-		"""
-		PARTE AVATAR NON USATA
-		
-		self.helper = Helper()
 
-		
-		Introduzione helper animato
-		self.avatar = QLabel(self)
-		self.avatar.setGeometry(50, 500, 200, 200)
-
-		Imposto l'helper all'interno del suo label 
-		self.avatar.setPixmap(self.helper.get_helper())
-
-		Introduzione nuvola per il dialogo 
-		self.cloud = QLabel(self)
-		self.cloud.setGeometry(200,425,600,300)
-		Setto la nuvola all'interno del suo spazio
-		cloud_img = QPixmap("Assets/cloud.png")
-		cloud_img = cloud_img.scaled(270,90)
-		self.cloud.setPixmap(cloud_img)
-
-		self.avatar_msg = QLabel(self)
-		self.avatar_msg.setGeometry(240,540,225,70)
-		self.avatar_msg.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
-		self.avatar_msg.setWordWrap(True)
-		self.avatar_msg.setStyleSheet(color:white;font-size:20px;)
-		self.avatar_msg.setText(self.helper.get_message())
-		
-		"""
 
 		"""Definizione di un pulsante per la modalità di gioco : 
 		Bianco vs CPU """
@@ -367,11 +488,73 @@ class App(QWidget):
 		self.next_wizard.clicked.connect(self.next_wizard_action)
 		self.next_wizard.hide()
 
+		"""Loading Bar per creazione del modello"""
+		self.progressBar = QProgressBar(self)
+		self.progressBar.setGeometry(600, 70, 200, 40)
+		self.progressBar.setProperty("value", 0)
+		self.progressBar.setTextVisible(True)
+		self.progressBar.hide()
+
+		"""Thread per la creazione del modello"""
+		self.myLongTask = TaskThread()
+		self.myLongTask.taskFinished.connect(self.onFinished)
 
 		"""Codifica della scacchiera formato svg per la lettura 
 		e scrittura all'interno della finestra preposta """
 		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
 		self.widgetSvg.load(self.chessboardSvg)
+
+		self.radio_label = QLabel("Seleziona scacchiera",self)
+		self.radio_label.setGeometry(600,170,200,40)
+		self.radio_label.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
+		self.radio_label.setObjectName("RadioLabel")
+		self.radio_label.hide()
+
+		self.radioDefault = QRadioButton("Default",self)
+		self.radioDefault.setGeometry(610,177,200,40)
+		self.radioDefault.setChecked(True)
+		self.radioDefault.hide()
+
+		self.radioPersonal = QRadioButton("Personale",self)
+		self.radioPersonal.setGeometry(690,177,200,40)
+		self.radioPersonal.setCheckable(isAvailable)
+		self.radioPersonal.hide()
+
+		self.radioDefault.toggled.connect(self.onClicked)
+
+
+
+
+
+	def onClicked(self):
+		global chessboard_type
+		if(self.radioDefault.isChecked()):
+			chessboard_type = 0
+			set_model(chessboard_type)
+			return
+		else:
+			chessboard_type = 1
+			set_model(chessboard_type)
+
+
+
+	def onFinished(self):
+		# Stop the pulsation
+		self.progressBar.setRange(0, 100)
+		self.myLongTask.stop()
+		isPersonalAvailable()
+
+
+
+		self.msg = QMessageBox()
+		self.msg.setWindowTitle("CONGRATULAZIONI!")
+		self.msg.setText("Puoi ora utilizzare il sistema con la tua scacchiera")
+		self.msg.setIcon(QMessageBox.Information)
+		self.msg.setStandardButtons(QMessageBox.Ok)
+		self.msg.setWindowFlag(Qt.FramelessWindowHint)
+		self.msg.show()
+
+		self.msg.buttonClicked.connect(self.back_home)
 
 	"""Funzione che permette di tornare al menu iniziale 
 	a partire da una schermata di gioco : vengono resettati i pulsanti 
@@ -417,6 +600,11 @@ class App(QWidget):
 		self.slider.hide()
 		self.setting.show()
 		self.findChessboard.hide()
+		self.progressBar.hide()
+		self.wizard.hide()
+		self.radio_label.hide()
+		self.radioPersonal.hide()
+		self.radioDefault.hide()
 
 	"""Mostra le impostazioni """
 	@pyqtSlot()
@@ -428,7 +616,10 @@ class App(QWidget):
 		self.home.show()
 		self.setting.hide()
 		self.wizard.show()
-
+		self.radioDefault.show()
+		self.radioPersonal.show()
+		self.radio_label.show()
+		self.home.setGeometry(600,250,200,40)
 
 	@pyqtSlot()
 	def start_wizard(self):
@@ -451,8 +642,8 @@ class App(QWidget):
 
 
 		if(step == 0 ):
-			boxes = boxes_matrix(img_chessboard, coordinates)
-			create_chessboard_set(boxes,step)
+			#boxes = boxes_matrix(img_chessboard, coordinates)
+			#create_chessboard_set(boxes,step)
 
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBQKBNR w - - 0 1")
@@ -461,8 +652,8 @@ class App(QWidget):
 
 
 		if(step == 1):
-			boxes = boxes_matrix(img_chessboard, coordinates)
-			create_chessboard_set(boxes,step)
+			#boxes = boxes_matrix(img_chessboard, coordinates)
+			#create_chessboard_set(boxes,step)
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1")
 			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
@@ -471,8 +662,14 @@ class App(QWidget):
 
 
 		if(step == 2 ):
-			boxes = boxes_matrix(img_chessboard, coordinates)
-			create_chessboard_set(boxes,step)
+			#boxes = boxes_matrix(img_chessboard, coordinates)
+			#create_chessboard_set(boxes,step)
+
+			self.next_wizard.hide()
+			self.progressBar.show()
+			self.progressBar.setRange(0, 100)
+			self.myLongTask.start()
+
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
 			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
@@ -731,7 +928,7 @@ class App(QWidget):
 			self.msg.show()
 			return
 
-	
+
 
 		# Aggiorna la scacchiera a schermo
 		self.updateChessboard(chessboard)
@@ -1002,6 +1199,11 @@ class App(QWidget):
 		p = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
 		return QPixmap.fromImage(p)
 
+def isPersonalAvailable():
+	global isAvailable
+
+	if Path("my_keras.h5").is_file():
+		isAvailable = True
 
 """Definizione della schermata di caricamento"""
 
@@ -1045,6 +1247,9 @@ class SplashScreen(QWidget):
 	della splash screen """
 
 	def initUI(self):
+
+		isPersonalAvailable()
+
 
 		# Definizione tipologia di layout
 		layout = QVBoxLayout()
@@ -1106,6 +1311,8 @@ class SplashScreen(QWidget):
 		if (not isLoading):
 			self.myApp.image_label.setPixmap(qt_img)
 
+
+
 	def convert_cv_qt(self, cv_img):
 		"""Convert from an opencv image to QPixmap"""
 		cv_img = cv2.rotate(cv_img, cv2.ROTATE_180)
@@ -1137,6 +1344,8 @@ class SplashScreen(QWidget):
 			self.close()
 
 			self.myApp = App()
+			global refApp
+			refApp= self.myApp
 			self.myApp.show()
 
 		self.counter += 1
@@ -1215,6 +1424,18 @@ if __name__ == "__main__":
 				text-shadow:0px 1px 0px #000000;
 			}
 			
+			#RadioLabel{
+				background:linear-gradient(to bottom, #8b9294 5%, #70787a 100%);
+				background-color:#8b9294;
+				border-radius:8px;
+				border:2px solid #141010;
+				cursor:pointer;
+				color:#ffffff;
+				font-family:Arial;
+				font-size:12px;
+				text-decoration:none;
+				text-shadow:0px 1px 0px #000000;
+			}
 			
 			QPushButton:hover {
 				background:linear-gradient(to bottom, #70787a 5%, #8b9294 100%);
