@@ -514,6 +514,10 @@ def create_chessboard_set(boxes,flag):
             cv2.imwrite("new_chessboard\A-Empty\empty270" + str(flag) + str(i) + ".jpg", frame270)
 
 
+"""Estrazione Roi"""
+def roi_Extraction(img):
+    frame = img[24:104, 24:104]  # Estrazione Roi
+
 """Stampa la matrice posizionale"""
 def print_positional_matrix(matrix):
     print("MATRICE POSIZIONALE")

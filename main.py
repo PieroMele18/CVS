@@ -37,9 +37,12 @@ from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout, QPushBut
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread, QTimer, QPropertyAnimation, QRect
 
+"""Altre librerie utilizzate"""
 import time
 import sys
 
+
+"""Gestione ed eventuale creazione delle cartelle per il dataset"""
 from pathlib import Path
 Path("new_chessboard/A-Empty").mkdir(parents=True, exist_ok=True)
 Path("new_chessboard/B-Black").mkdir(parents=True, exist_ok=True)
@@ -210,6 +213,11 @@ class TaskThread(QThread):
 				callbacks=[CustomCallback()]
 			)
 
+			acc = history.history['accuracy']
+			val_acc = history.history['val_accuracy']
+
+			print(acc)
+			print(val_acc)
 
 
 			model.save("my_keras.h5")
@@ -369,7 +377,7 @@ class App(QWidget):
 		e la funzionalità di alcuni strumenti, tra cui il riconoscimento 
 		dei pezzi all'interno della scacchiera """
 		self.solitario = QPushButton('Analisi partita', self)
-		self.solitario.setToolTip('Motore di analisi')
+		self.solitario.setToolTip('Gioca con un tuo amico!')
 		self.solitario.setGeometry(600, 70, 200, 40)
 		self.solitario.clicked.connect(self.on_click_solitario)
 
@@ -418,6 +426,8 @@ class App(QWidget):
 
 		"""Pulsante per confermare l'esecuzione di una mossa """
 		self.button = QPushButton('Prossima mossa', self)
+		self.button.setToolTip("Clicca il tasto n per passare alla prossima mossa")
+		self.button.setShortcut("n")
 		self.button.setGeometry(600, 70, 200, 40)
 		self.button.clicked.connect(self.on_click_next)
 		self.button.hide()
@@ -425,6 +435,7 @@ class App(QWidget):
 		"""Pulsante per confermare l'esecuzione della mossa,
 		utilizzato nella modalità di gioco Bianco Vs Cpu"""
 		self.next_white = QPushButton('Prossima mossa', self)
+		self.next_white.setToolTip("Clicca il tasto n per passare alla prossima mossa")
 		self.next_white.setGeometry(600, 70, 200, 40)
 		self.next_white.clicked.connect(self.on_click_next_white)
 		self.next_white.hide()
@@ -432,6 +443,7 @@ class App(QWidget):
 		"""Pulsante per confermare l'esecuzione della mossa,
 		utilizzato nella modalità di gioco Bianco Vs Cpu"""
 		self.next_black = QPushButton('Prossima mossa', self)
+		self.next_black.setToolTip("Clicca il tasto n per passare alla prossima mossa")
 		self.next_black.setGeometry(600, 70, 200, 40)
 		self.next_black.clicked.connect(self.on_click_next_black)
 		self.next_black.hide()
@@ -440,6 +452,7 @@ class App(QWidget):
 		e dello stato di gioco (Ad esempio quando si vuole 
 		 iniziare una nuova partita) """
 		self.buttonReset = QPushButton('Reset', self)
+		self.buttonReset.setToolTip("Ricomincia la partita")
 		self.buttonReset.setGeometry(600, 120, 200, 40)
 		self.buttonReset.clicked.connect(self.on_click_reset)
 		self.buttonReset.hide()
@@ -447,12 +460,14 @@ class App(QWidget):
 		"""Pulsante per rientrare al menu principale a partire
 		dalle altre schermata di gioco """
 		self.home = QPushButton("Torna alla home", self)
+		self.home.setToolTip("Clicca per uscire")
 		self.home.setGeometry(600, 170, 200, 40)
 		self.home.clicked.connect(self.back_home)
 		self.home.hide()
 
 		"""Pulsante per effettuare la ricerca della scacchiera"""
 		self.findChessboard = QPushButton('Ricerca Scacchiera', self)
+		self.findChessboard.setToolTip("Localizza la scacchiera")
 		self.findChessboard.setGeometry(600, 70, 200, 40)
 		self.findChessboard.clicked.connect(self.search_chessboard)
 		self.findChessboard.hide()
@@ -473,11 +488,13 @@ class App(QWidget):
 
 		"""Pulsante per le impostazioni della scacchiera """
 		self.setting = QPushButton("Impostazioni ", self)
+		self.setting.setToolTip("Clicca per aprire le impostazioni")
 		self.setting.setGeometry(600, 250, 200, 40)
 		self.setting.clicked.connect(self.open_settings)
 
 		"""Pulsante per wizard creazione set scacchiera"""
 		self.wizard = QPushButton("Aggiungi scacchiera", self)
+		self.wizard.setToolTip("Clicca per creare poter giocare con la tua scacchiera")
 		self.wizard.setGeometry(600, 120, 200, 40)
 		self.wizard.clicked.connect(self.start_wizard)
 		self.wizard.hide()
@@ -525,7 +542,6 @@ class App(QWidget):
 
 
 
-
 	def onClicked(self):
 		global chessboard_type
 		if(self.radioDefault.isChecked()):
@@ -556,10 +572,11 @@ class App(QWidget):
 
 		self.msg.buttonClicked.connect(self.back_home)
 
+
+
 	"""Funzione che permette di tornare al menu iniziale 
 	a partire da una schermata di gioco : vengono resettati i pulsanti 
 	presenti nella home e viene resettata la scacchiera"""
-
 	@pyqtSlot()
 	def back_home(self):
 
@@ -605,6 +622,7 @@ class App(QWidget):
 		self.radio_label.hide()
 		self.radioPersonal.hide()
 		self.radioDefault.hide()
+		self.button.hide()
 
 	"""Mostra le impostazioni """
 	@pyqtSlot()
@@ -645,8 +663,8 @@ class App(QWidget):
 
 
 		if(step == 0 ):
-			#boxes = boxes_matrix(img_chessboard, coordinates)
-			#create_chessboard_set(boxes,step)
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
 
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBQKBNR w - - 0 1")
@@ -655,8 +673,8 @@ class App(QWidget):
 
 
 		if(step == 1):
-			#boxes = boxes_matrix(img_chessboard, coordinates)
-			#create_chessboard_set(boxes,step)
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
 			"""Prossimo schema per i pezzi sulla scacchiera"""
 			chessboard = chess.Board("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1")
 			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.WHITE).encode("UTF-8")
@@ -665,8 +683,8 @@ class App(QWidget):
 
 
 		if(step == 2 ):
-			#boxes = boxes_matrix(img_chessboard, coordinates)
-			#create_chessboard_set(boxes,step)
+			boxes = boxes_matrix(img_chessboard, coordinates)
+			create_chessboard_set(boxes,step)
 
 			self.next_wizard.hide()
 			self.progressBar.show()
@@ -727,6 +745,7 @@ class App(QWidget):
 			self.findChessboard.hide()
 			self.home.show()
 			self.slider.hide()
+			self.setting.hide()
 
 			# Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -807,6 +826,8 @@ class App(QWidget):
 			self.findChessboard.hide()
 			self.home.show()
 			self.slider.hide()
+			self.setting.hide()
+
 
 
 			"""Prima mossa spetta al computer """
@@ -858,6 +879,8 @@ class App(QWidget):
 			self.White.hide()
 			self.Black.hide()
 			self.findChessboard.hide()
+			self.setting.hide()
+			self.home.show()
 
 			# Aggiorno la scacchiera a schermo
 			self.updateChessboard(chessboard)
@@ -931,6 +954,16 @@ class App(QWidget):
 			self.msg.show()
 			return
 
+		if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("PARTITA PATTA!")
+			self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
+
 
 
 		# Aggiorna la scacchiera a schermo
@@ -956,6 +989,17 @@ class App(QWidget):
 			self.msg = QMessageBox()
 			self.msg.setWindowTitle("HAI PERSO !")
 			self.msg.setText("Il computer ti ha battuto")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
+
+
+		if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("PARTITA PATTA!")
+			self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
 			self.msg.setIcon(QMessageBox.Information)
 			self.msg.setStandardButtons(QMessageBox.Ok)
 			self.msg.setWindowFlag(Qt.FramelessWindowHint)
@@ -1010,6 +1054,16 @@ class App(QWidget):
 			self.msg.show()
 			return
 
+		if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("PARTITA PATTA!")
+			self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
+
 
 
 		fen = chessboard.fen()
@@ -1033,6 +1087,17 @@ class App(QWidget):
 			self.msg = QMessageBox()
 			self.msg.setWindowTitle("HAI PERSO !")
 			self.msg.setText("Il computer ti ha battuto")
+			self.msg.setIcon(QMessageBox.Information)
+			self.msg.setStandardButtons(QMessageBox.Ok)
+			self.msg.setWindowFlag(Qt.FramelessWindowHint)
+			self.msg.show()
+			return
+
+
+		if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+			self.msg = QMessageBox()
+			self.msg.setWindowTitle("PARTITA PATTA!")
+			self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
 			self.msg.setIcon(QMessageBox.Information)
 			self.msg.setStandardButtons(QMessageBox.Ok)
 			self.msg.setWindowFlag(Qt.FramelessWindowHint)
@@ -1113,6 +1178,16 @@ class App(QWidget):
 				self.msg.setWindowFlag(Qt.FramelessWindowHint)
 				self.msg.show()
 
+			if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("PARTITA PATTA!")
+				self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
+				self.msg.setIcon(QMessageBox.Information)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
+				return
+
 
 
 			self.on_update_moves(chessboard)
@@ -1157,6 +1232,16 @@ class App(QWidget):
 				self.msg.setStandardButtons(QMessageBox.Ok)
 				self.msg.setWindowFlag(Qt.FramelessWindowHint)
 				self.msg.show()
+
+			if (chessboard.is_repetition(3) or chessboard.is_insufficient_material() or chessboard.is_stalemate()):
+				self.msg = QMessageBox()
+				self.msg.setWindowTitle("PARTITA PATTA!")
+				self.msg.setText("Partita patta : non è possibile stabilire un vincitore tra i giocatori")
+				self.msg.setIcon(QMessageBox.Information)
+				self.msg.setStandardButtons(QMessageBox.Ok)
+				self.msg.setWindowFlag(Qt.FramelessWindowHint)
+				self.msg.show()
+				return
 
 
 
@@ -1207,6 +1292,9 @@ def isPersonalAvailable():
 
 	if Path("my_keras.h5").is_file():
 		isAvailable = True
+
+
+
 
 """Definizione della schermata di caricamento"""
 
