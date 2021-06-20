@@ -44,9 +44,9 @@ import sys
 
 """Gestione ed eventuale creazione delle cartelle per il dataset"""
 from pathlib import Path
-Path("new_chessboard/A-Empty").mkdir(parents=True, exist_ok=True)
-Path("new_chessboard/B-Black").mkdir(parents=True, exist_ok=True)
-Path("new_chessboard/C-White").mkdir(parents=True, exist_ok=True)
+Path("new_chessboard/Empty").mkdir(parents=True, exist_ok=True)
+Path("new_chessboard/Black").mkdir(parents=True, exist_ok=True)
+Path("new_chessboard/White").mkdir(parents=True, exist_ok=True)
 
 
 """Classe per la gestione della visione artificiale e per
@@ -105,7 +105,7 @@ isLoading = True
 #Per la creazione di un modello , per la barra di caricamento
 refApp = None
 #Variabile che indica il numero di epoche per la creazione del modello
-epochs = 50
+epochs = 20
 #Flag che indica se si sta utilizzando la scacchiera di default o meno
 chessboard_type = 0
 #Flag che indica se è stato creato un modello personale
@@ -133,9 +133,8 @@ class TaskThread(QThread):
 			"""Parametri per keras """
 
 			batch_size = 16
-			width = 56
-			height = 56
-
+			width = 224
+			height = 224
 
 			"""Training"""
 			train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -156,18 +155,7 @@ class TaskThread(QThread):
 				batch_size=batch_size)
 
 
-			"""Data augmentation"""
 
-			data_augmentation = keras.Sequential(
-				[
-					layers.experimental.preprocessing.RandomFlip("horizontal",
-																 input_shape=(height,
-																			  width,
-																			  3)),
-					layers.experimental.preprocessing.RandomRotation(0.1),
-					layers.experimental.preprocessing.RandomZoom(0.1),
-				]
-			)
 
 			####################################################################
 
@@ -176,27 +164,11 @@ class TaskThread(QThread):
 			train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 			val_ds = val_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
-			"""Allenamento del modello predittivo"""
-			"""
-			model = tf.keras.applications.VGG16(
-				include_top=True, weights='imagenet', input_tensor=None,
-				input_shape=None, pooling=None, classes=1000,
-				classifier_activation='softmax'
+			model = tf.keras.applications.MobileNet(
+				input_shape=None, alpha=1.0, depth_multiplier=1, dropout=0.001,
+				include_top=True, weights="imagenet", input_tensor=None, pooling=None,
+				classes=1000, classifier_activation='softmax'
 			)
-			"""
-			model = tf.keras.Sequential([
-				layers.experimental.preprocessing.Rescaling(1. / 255),
-				data_augmentation,
-				layers.Conv2D(32, 3, activation='relu'),
-				layers.MaxPooling2D(),
-				layers.Conv2D(32, 3, activation='relu'),
-				layers.MaxPooling2D(),
-				layers.Conv2D(32, 3, activation='relu'),
-				layers.MaxPooling2D(),
-				layers.Flatten(),
-				layers.Dense(128, activation='relu'),
-				layers.Dense(3)
-			])
 
 			model.compile(
 				optimizer='adam',
@@ -291,6 +263,7 @@ class VideoThread(QThread):
 				# Se la scacchiera è stata trovata
 				if chessboard_found:
 
+					#draw_chessboard_sides(img, chessboard_found, chessboard_corners)
 					# Variabile globale per l'immagine della scacchiera
 					global img_chessboard
 
@@ -594,7 +567,7 @@ class App(QWidget):
 
 		"""Resetto lo scacchiera sulla sinistra """
 		chessboard = chess.Board("8/8/8/8/8/8/8/8 w - - 0 1")
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,0)
 		self.label.setText("")
 
 		"""Resetto la scacchiera sulla destra ( bordi numerati ) """
@@ -748,7 +721,7 @@ class App(QWidget):
 			self.setting.hide()
 
 			# Aggiorno la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.updateChessboard(chessboard,0)
 
 		elif isEmpty(matrix):
 			self.msg = QMessageBox()
@@ -801,6 +774,9 @@ class App(QWidget):
 
 		global chessboard
 
+		self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.BLACK).encode("UTF-8")
+		self.widgetSvg.load(self.chessboardSvg)
+
 		self.setLevel()
 
 
@@ -841,7 +817,7 @@ class App(QWidget):
 			self.on_update_moves(chessboard)
 
 			# Aggiorna la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.updateChessboard(chessboard,1)
 
 		elif isEmpty(matrix):
 			self.msg = QMessageBox()
@@ -883,7 +859,7 @@ class App(QWidget):
 			self.home.show()
 
 			# Aggiorno la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.updateChessboard(chessboard,0)
 
 		elif isEmpty(matrix):
 			self.msg = QMessageBox()
@@ -911,7 +887,7 @@ class App(QWidget):
 		oldwhite = setWhite()
 
 		chessboard = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,0)
 		self.label.setText("")
 
 	"""Permette di passare da una mossa all'altra ,
@@ -967,9 +943,9 @@ class App(QWidget):
 
 
 		# Aggiorna la scacchiera a schermo
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,0)
 		# Sovrascrivere variabile dello stato precedente con il nuovo stato
-		oldwhite = matrix
+		oldwhite = get_old_matrix(chessboard,"white")
 
 		fen = chessboard.fen()
 		stockfish.set_fen_position(fen)
@@ -982,7 +958,7 @@ class App(QWidget):
 		self.on_update_moves(chessboard)
 
 		# Aggiorna la scacchiera a schermo
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,0)
 
 		# Vittoria per il nero
 		if (chessboard.is_checkmate()):
@@ -1039,9 +1015,9 @@ class App(QWidget):
 
 
 		# Aggiorna la scacchiera a schermo
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,1)
 		# Sovrascrivere variabile dello stato precedente con il nuovo stato
-		oldblack = matrix
+		oldblack = get_old_matrix(chessboard,"black")
 
 		# Vittoria per il nero
 		if (chessboard.is_checkmate()):
@@ -1079,7 +1055,7 @@ class App(QWidget):
 		self.on_update_moves(chessboard)
 
 		# Aggiorna la scacchiera a schermo
-		self.updateChessboard(chessboard)
+		self.updateChessboard(chessboard,1)
 
 
 		# Vittoria per il bianco
@@ -1140,6 +1116,13 @@ class App(QWidget):
 		global isBlackTurn
 		global oldblack
 		global oldwhite
+		global chessboard
+
+		print("OLDWHITE")
+		print_positional_matrix(oldwhite)
+
+		print("OLDBLACK")
+		print_positional_matrix(oldblack)
 
 		# Estrazione delle case della matrice
 		if boxes_found:
@@ -1166,7 +1149,7 @@ class App(QWidget):
 				return
 
 			# Gestione pedone mangiato
-			oldblack = whiteTake(matrix, oldblack)
+			oldblack = get_old_matrix(chessboard,"black")
 
 			# Vittoria per il bianco
 			if (chessboard.is_checkmate()):
@@ -1196,9 +1179,11 @@ class App(QWidget):
 			isWhiteTurn = False
 			isBlackTurn = True
 			# Aggiorna la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.updateChessboard(chessboard,0)
 			# Sovrascrivere variabile dello stato precedente con il nuovo stato
-			oldwhite = matrix
+			oldwhite = get_old_matrix(chessboard,"white")
+
+
 			return
 
 		# Se è il turno del nero
@@ -1221,7 +1206,7 @@ class App(QWidget):
 				return
 
 			# Gestione pedone mangiato
-			oldwhite = blackTake(matrix, oldwhite)
+			oldwhite = get_old_matrix(chessboard,"white")
 
 			# Vittoria per il bianco
 			if (chessboard.is_checkmate()):
@@ -1252,17 +1237,24 @@ class App(QWidget):
 			isWhiteTurn = True
 			isBlackTurn = False
 			# Aggiorna la scacchiera a schermo
-			self.updateChessboard(chessboard)
+			self.updateChessboard(chessboard,0)
 			# Sovrascrivere variabile dello stato precedente con il nuovo stato
-			oldblack = matrix
+			oldblack = get_old_matrix(chessboard,"black")
 			return
 
 	"""Aggiorna la scacchiera a schermo"""
 
 	@pyqtSlot()
-	def updateChessboard(self, chessboard):
-		self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
-		self.widgetSvg.load(self.chessboardSvg)
+	def updateChessboard(self, chessboard,flag):
+
+		if(flag == 0):
+			self.chessboardSvg = chess.svg.board(chessboard).encode("UTF-8")
+			self.widgetSvg.load(self.chessboardSvg)
+
+		if(flag == 1 ):
+			self.chessboardSvg = chess.svg.board(chessboard, orientation=chess.BLACK).encode("UTF-8")
+			self.widgetSvg.load(self.chessboardSvg)
+
 
 	"""Funzione per aggiornare l'immagine 
 	catturata dalla webcam all'interno 
