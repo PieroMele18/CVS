@@ -1,3 +1,6 @@
+![alt text](/logo.png?raw=true)
+
+
 # Computer Vision Chess System
 This is a computer vision system that allows players to play chess with a real-life chessboard. The system uses computer vision and a convolutional neural network to detect and track the movement of chess pieces on the board.
 
