@@ -1,4 +1,4 @@
-![alt text](Computer Vision Chess.png?raw=true)
+![alt text](/logo.png?raw=true)
 
 
 # Computer Vision Chess System
